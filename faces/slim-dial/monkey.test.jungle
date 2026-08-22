@@ -1,0 +1,4 @@
+# Test-only overlay. Combine with the main jungle when compiling with -t:
+#   monkeyc -o bin/SlimDialTest.prg -f "monkey.jungle;monkey.test.jungle" \
+#     -y ~/GarminDeveloperKeys/developer_key -d d2mach2 -t
+base.sourcePath = $(base.sourcePath);test
