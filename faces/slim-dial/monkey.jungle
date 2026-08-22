@@ -1,0 +1,5 @@
+project.manifest = manifest.xml
+
+# Face sources plus the repo-level analog kit. Paths are relative to this
+# jungle file. Do not glob **.mc — that would pull test/ into the device build.
+base.sourcePath = source;../../shared/source
