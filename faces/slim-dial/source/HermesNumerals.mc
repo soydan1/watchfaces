@@ -8,6 +8,7 @@ import Toybox.Math;
 module HermesNumerals {
 
     const SIZE_RATIO = 0.22;
+    const AOD_SIZE_RATIO = 0.32;
     const HIGH_PEN = 2;
     const AOD_PEN = 1;
 
@@ -61,6 +62,88 @@ module HermesNumerals {
                 drawDigit(dc, hour, x, y, size);
             }
         }
+    }
+
+    function aodGlyphSize(dc as Dc) as Number {
+        var w = dc.getWidth();
+        var h = dc.getHeight();
+        var half = ((w < h) ? w : h) / 2;
+        var size = (half * AOD_SIZE_RATIO).toNumber();
+        if (size < 22) {
+            size = 22;
+        }
+        return size;
+    }
+
+    // AOD 12 / 3 / 9 only. Letterforms match hermesbg.png (n-cap 2, round 3, loop 9).
+    function drawAodHours(
+        dc as Dc,
+        cx as Number,
+        cy as Number,
+        radius as Number,
+        color as Number
+    ) as Void {
+        var size = aodGlyphSize(dc);
+        dc.setColor(color, Graphics.COLOR_TRANSPARENT);
+        dc.setPenWidth(AOD_PEN);
+        var a12 = AnalogGeometry.hourLabelAngle(12);
+        var a3 = AnalogGeometry.hourLabelAngle(3);
+        var a9 = AnalogGeometry.hourLabelAngle(9);
+        drawAodTwelve(dc, cx + (Math.cos(a12) * radius).toNumber(), cy + (Math.sin(a12) * radius).toNumber(), size);
+        drawAodThree(dc, cx + (Math.cos(a3) * radius).toNumber(), cy + (Math.sin(a3) * radius).toNumber(), size);
+        drawAodNine(dc, cx + (Math.cos(a9) * radius).toNumber(), cy + (Math.sin(a9) * radius).toNumber(), size);
+    }
+
+    function drawAodTwelve(dc as Dc, cx as Number, cy as Number, size as Number) as Void {
+        var w1 = size * 0.10;
+        var w2 = size * 0.52;
+        var gap = size * 0.16;
+        var total = w1 + gap + w2;
+        var lx = cx - (total / 2.0 - w1 / 2.0).toNumber();
+        var rx = cx + (total / 2.0 - w2 / 2.0).toNumber();
+        drawAodOne(dc, lx, cy, size);
+        drawAodTwo(dc, rx, cy, size);
+    }
+
+    function drawAodOne(dc as Dc, cx as Number, cy as Number, size as Number) as Void {
+        var h = (size * 0.92).toNumber();
+        dc.drawLine(cx, cy - h / 2, cx, cy + h / 2);
+    }
+
+    // Plate 2: n-cap, diagonal, long baseline. Not a round-top 2.
+    function drawAodTwo(dc as Dc, cx as Number, cy as Number, size as Number) as Void {
+        var top = cy - (size * 0.48).toNumber();
+        var capH = (size * 0.28).toNumber();
+        var left = cx - (size * 0.24).toNumber();
+        var right = cx + (size * 0.26).toNumber();
+        var base = cy + (size * 0.46).toNumber();
+        dc.drawLine(left, top, right, top);
+        dc.drawLine(left, top, left, top + capH);
+        dc.drawLine(right, top, right, top + capH);
+        dc.drawLine(right, top + capH, left, base);
+        dc.drawLine(left, base, right, base);
+    }
+
+    function drawAodThree(dc as Dc, cx as Number, cy as Number, size as Number) as Void {
+        var r = (size * 0.22).toNumber();
+        if (r < 4) {
+            r = 4;
+        }
+        var ox = cx + (size * 0.04).toNumber();
+        dc.drawArc(ox, cy - (size * 0.22).toNumber(), r, Graphics.ARC_CLOCKWISE, 155, 270);
+        dc.drawArc(ox, cy + (size * 0.22).toNumber(), r, Graphics.ARC_CLOCKWISE, 90, 205);
+    }
+
+    function drawAodNine(dc as Dc, cx as Number, cy as Number, size as Number) as Void {
+        var r = (size * 0.24).toNumber();
+        if (r < 4) {
+            r = 4;
+        }
+        var bx = cx;
+        var by = cy - (size * 0.10).toNumber();
+        dc.drawCircle(bx, by, r);
+        var right = bx + r;
+        dc.drawLine(right, by, right - (size * 0.04).toNumber(), cy + (size * 0.48).toNumber());
     }
 
     function drawDigit(dc as Dc, digit as Number, cx as Number, cy as Number, size as Number) as Void {

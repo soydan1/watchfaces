@@ -1,6 +1,5 @@
 import Toybox.Graphics;
 import Toybox.Lang;
-import Toybox.Math;
 import Toybox.System;
 import Toybox.WatchUi;
 
@@ -39,7 +38,6 @@ class HermesFaceView extends WatchUi.WatchFace {
         _partialUpdatesAllowed = false;
     }
 
-    // AMOLED AOD is a full low-power redraw, not a clipped seconds tick.
     function onPartialUpdate(dc as Dc) as Void {
         if (!_partialUpdatesAllowed) {
             return;
@@ -82,11 +80,8 @@ class HermesFaceView extends WatchUi.WatchFace {
             dc.fillCircle(cx, cy, half - 2);
         }
 
-        drawHands(dc, cx, cy, subCy, half, clockTime, 0x111111, true);
-
-        dc.setColor(0x111111, Graphics.COLOR_TRANSPARENT);
-        dc.fillCircle(cx, cy, (half * HermesGeometry.MAIN_ARBOR).toNumber());
-        dc.fillCircle(cx, subCy, (half * HermesGeometry.SUB_ARBOR).toNumber());
+        drawHands(dc, cx, cy, subCy, half, clockTime, 0x1A1A1A, 0x6A6A6A, true);
+        drawHub(dc, cx, cy, half, 0x111111, 0xE8E4DC, true);
     }
 
     private function drawLowPower(dc as Dc) as Void {
@@ -98,26 +93,15 @@ class HermesFaceView extends WatchUi.WatchFace {
         var cy = height / 2 + shift[1];
         var half = ((width < height) ? width : height) / 2;
 
-        // Never blit the light plate in AOD — it would light every pixel.
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
         dc.clear();
 
         var cream = 0xE8E0D0;
-        dc.setColor(cream, Graphics.COLOR_TRANSPARENT);
-        dc.setPenWidth(1);
-        dc.drawCircle(cx, cy, (half * HermesGeometry.CHAPTER_RING).toNumber());
-
-        // 12 / 3 / 9 only, 1 px outline. Skip 6 for the 10% budget.
         var numeralR = (half * HermesGeometry.NUMERAL_RING).toNumber();
-        var aodPen = HermesNumerals.AOD_PEN;
-        HermesNumerals.drawHourLabel(dc, 12, cx, cy - numeralR, cream, aodPen);
-        HermesNumerals.drawHourLabel(dc, 3, cx + numeralR, cy, cream, aodPen);
-        HermesNumerals.drawHourLabel(dc, 9, cx - numeralR, cy, cream, aodPen);
+        HermesNumerals.drawAodHours(dc, cx, cy, numeralR, cream);
 
-        drawHands(dc, cx, cy, cy, half, clockTime, cream, false);
-
-        dc.setColor(cream, Graphics.COLOR_TRANSPARENT);
-        dc.fillCircle(cx, cy, (half * HermesGeometry.MAIN_ARBOR).toNumber());
+        drawHands(dc, cx, cy, cy, half, clockTime, cream, 0xC4B8A0, false);
+        drawHub(dc, cx, cy, half, cream, cream, false);
     }
 
     private function drawHands(
@@ -127,39 +111,61 @@ class HermesFaceView extends WatchUi.WatchFace {
         subCy as Number,
         half as Number,
         clockTime as ClockTime,
-        color as Number,
+        dark as Number,
+        light as Number,
         drawSeconds as Boolean
     ) as Void {
-        dc.setColor(color, Graphics.COLOR_TRANSPARENT);
-        var hourPoly = AnalogGeometry.handPolygon(
-            cx,
-            cy,
-            AnalogGeometry.hourAngle(clockTime.hour, clockTime.min),
-            (half * HermesGeometry.HOUR_HAND_LEN).toNumber(),
-            (half * HermesGeometry.HAND_TAIL).toNumber(),
-            (half * HermesGeometry.HOUR_HAND_WIDTH).toNumber()
-        );
-        var minutePoly = AnalogGeometry.handPolygon(
-            cx,
-            cy,
-            AnalogGeometry.minuteAngle(clockTime.min),
-            (half * HermesGeometry.MINUTE_HAND_LEN).toNumber(),
-            (half * HermesGeometry.HAND_TAIL).toNumber(),
-            (half * HermesGeometry.MINUTE_HAND_WIDTH).toNumber()
-        );
-        dc.fillPolygon(hourPoly);
-        dc.fillPolygon(minutePoly);
+        var hourLen = (half * HermesGeometry.HOUR_HAND_LEN).toNumber();
+        var hourTail = (half * HermesGeometry.HAND_TAIL).toNumber();
+        var hourW = (half * HermesGeometry.HOUR_HAND_WIDTH).toNumber();
+        var hourAng = AnalogGeometry.hourAngle(clockTime.hour, clockTime.min);
+
+        var minLen = (half * HermesGeometry.MINUTE_HAND_LEN).toNumber();
+        var minW = (half * HermesGeometry.MINUTE_HAND_WIDTH).toNumber();
+        var minAng = AnalogGeometry.minuteAngle(clockTime.min);
+
+        dc.setColor(light, Graphics.COLOR_TRANSPARENT);
+        dc.fillPolygon(AnalogGeometry.dauphineLeft(cx, cy, hourAng, hourLen, hourTail, hourW));
+        dc.fillPolygon(AnalogGeometry.dauphineLeft(cx, cy, minAng, minLen, hourTail, minW));
+        dc.setColor(dark, Graphics.COLOR_TRANSPARENT);
+        dc.fillPolygon(AnalogGeometry.dauphineRight(cx, cy, hourAng, hourLen, hourTail, hourW));
+        dc.fillPolygon(AnalogGeometry.dauphineRight(cx, cy, minAng, minLen, hourTail, minW));
 
         if (drawSeconds) {
-            var secondPoly = AnalogGeometry.handPolygon(
-                cx,
-                subCy,
-                AnalogGeometry.secondAngle(clockTime.sec),
-                (half * HermesGeometry.SECOND_HAND_LEN).toNumber(),
-                (half * HermesGeometry.HAND_TAIL / 2).toNumber(),
-                (half * HermesGeometry.SECOND_HAND_WIDTH).toNumber()
-            );
-            dc.fillPolygon(secondPoly);
+            var secAng = AnalogGeometry.secondAngle(clockTime.sec);
+            var secLen = (half * HermesGeometry.SECOND_HAND_LEN).toNumber();
+            var secTail = (half * HermesGeometry.SECOND_TAIL).toNumber();
+            var secW = (half * HermesGeometry.SECOND_HAND_WIDTH).toNumber();
+            dc.setColor(0x8A1A1A, Graphics.COLOR_TRANSPARENT);
+            dc.fillPolygon(AnalogGeometry.needlePolygon(cx, subCy, secAng, secLen, secTail, secW));
+            var cw = AnalogGeometry.rotate(cx, subCy, secAng, 0, (secTail * 0.62) as Numeric);
+            dc.fillCircle(cw[0].toNumber(), cw[1].toNumber(), (half * HermesGeometry.SECOND_COUNTERWEIGHT).toNumber());
+            var tip = AnalogGeometry.rotate(cx, subCy, secAng, 0, (-secLen) as Numeric);
+            dc.fillCircle(tip[0].toNumber(), tip[1].toNumber(), 1);
+        }
+    }
+
+    private function drawHub(
+        dc as Dc,
+        cx as Number,
+        cy as Number,
+        half as Number,
+        ring as Number,
+        pip as Number,
+        highPower as Boolean
+    ) as Void {
+        dc.setColor(ring, Graphics.COLOR_TRANSPARENT);
+        dc.fillCircle(cx, cy, (half * HermesGeometry.MAIN_ARBOR).toNumber());
+        dc.setColor(pip, Graphics.COLOR_TRANSPARENT);
+        dc.fillCircle(cx, cy, (half * HermesGeometry.MAIN_ARBOR_PIP).toNumber());
+        dc.setColor(ring, Graphics.COLOR_TRANSPARENT);
+        dc.fillCircle(cx, cy, (half * HermesGeometry.MAIN_ARBOR_PIN).toNumber());
+        if (highPower) {
+            var subCy = cy + (half * HermesGeometry.SUBDIAL_CENTER_Y).toNumber();
+            dc.setColor(0x111111, Graphics.COLOR_TRANSPARENT);
+            dc.fillCircle(cx, subCy, (half * HermesGeometry.SUB_ARBOR).toNumber());
+            dc.setColor(0xE8E4DC, Graphics.COLOR_TRANSPARENT);
+            dc.fillCircle(cx, subCy, (half * HermesGeometry.SUB_ARBOR_PIN).toNumber());
         }
     }
 }

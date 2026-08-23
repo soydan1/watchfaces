@@ -42,6 +42,18 @@ module AnalogGeometry {
         return ((hour / 12.0) * Math.PI * 2.0 - Math.PI / 2.0) as Float;
     }
 
+    function rotate(
+        cx as Number,
+        cy as Number,
+        angle as Float,
+        x as Numeric,
+        y as Numeric
+    ) as [Numeric, Numeric] {
+        var cos = Math.cos(angle);
+        var sin = Math.sin(angle);
+        return [cx + (x * cos) - (y * sin), cy + (x * sin) + (y * cos)];
+    }
+
     function handPolygon(
         cx as Number,
         cy as Number,
@@ -50,17 +62,119 @@ module AnalogGeometry {
         tail as Number,
         width as Number
     ) as Array<[Numeric, Numeric]> {
-        var coords = [
-            [-(width / 2), tail],
-            [-(width / 2), -length],
-            [width / 2, -length],
-            [width / 2, tail]
-        ] as Array<Array<Numeric>>;
-        var result = new Array<[Numeric, Numeric]>[4];
+        return transformPoly(
+            cx,
+            cy,
+            angle,
+            [
+                [-(width / 2), tail],
+                [-(width / 2), -length],
+                [width / 2, -length],
+                [width / 2, tail]
+            ] as Array<Array<Numeric>>
+        );
+    }
+
+    // Kite / dauphine: pointed tip, widest ~halfway, small counterweight.
+    function dauphinePolygon(
+        cx as Number,
+        cy as Number,
+        angle as Float,
+        length as Number,
+        tail as Number,
+        width as Number
+    ) as Array<[Numeric, Numeric]> {
+        return transformPoly(
+            cx,
+            cy,
+            angle,
+            [
+                [0, -length],
+                [-(width / 2), -length * 0.52],
+                [0, tail],
+                [width / 2, -length * 0.52]
+            ] as Array<Array<Numeric>>
+        );
+    }
+
+    function dauphineLeft(
+        cx as Number,
+        cy as Number,
+        angle as Float,
+        length as Number,
+        tail as Number,
+        width as Number
+    ) as Array<[Numeric, Numeric]> {
+        return transformPoly(
+            cx,
+            cy,
+            angle,
+            [
+                [0, -length],
+                [-(width / 2), -length * 0.52],
+                [0, tail]
+            ] as Array<Array<Numeric>>
+        );
+    }
+
+    function dauphineRight(
+        cx as Number,
+        cy as Number,
+        angle as Float,
+        length as Number,
+        tail as Number,
+        width as Number
+    ) as Array<[Numeric, Numeric]> {
+        return transformPoly(
+            cx,
+            cy,
+            angle,
+            [
+                [0, -length],
+                [width / 2, -length * 0.52],
+                [0, tail]
+            ] as Array<Array<Numeric>>
+        );
+    }
+
+    function needlePolygon(
+        cx as Number,
+        cy as Number,
+        angle as Float,
+        length as Number,
+        tail as Number,
+        width as Number
+    ) as Array<[Numeric, Numeric]> {
+        var halfW = width / 2.0;
+        if (halfW < 0.6) {
+            halfW = 0.6;
+        }
+        return transformPoly(
+            cx,
+            cy,
+            angle,
+            [
+                [0, -length],
+                [-halfW, -length + width + 2],
+                [-halfW, tail],
+                [halfW, tail],
+                [halfW, -length + width + 2]
+            ] as Array<Array<Numeric>>
+        );
+    }
+
+    function transformPoly(
+        cx as Number,
+        cy as Number,
+        angle as Float,
+        coords as Array<Array<Numeric>>
+    ) as Array<[Numeric, Numeric]> {
+        var n = coords.size();
+        var result = new Array<[Numeric, Numeric]>[n];
         var cos = Math.cos(angle);
         var sin = Math.sin(angle);
         var i = 0;
-        for (i = 0; i < 4; i++) {
+        for (i = 0; i < n; i++) {
             var x = (coords[i][0] * cos) - (coords[i][1] * sin);
             var y = (coords[i][0] * sin) + (coords[i][1] * cos);
             result[i] = [cx + x, cy + y];

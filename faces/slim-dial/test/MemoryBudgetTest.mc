@@ -51,6 +51,11 @@ module MemoryBudgetTest {
             logger.error("handPolygon must return 4 points");
             return false;
         }
+        var leaf = AnalogGeometry.dauphinePolygon(227, 227, hour, 80, 10, 8);
+        if (leaf.size() != 4) {
+            logger.error("dauphinePolygon must return 4 points");
+            return false;
+        }
 
         var after = System.getSystemStats().usedMemory;
         var delta = after - before;
