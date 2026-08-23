@@ -1,13 +1,36 @@
 import Toybox.Lang;
 import Toybox.System;
 import Toybox.Test;
+import Toybox.WatchUi;
 
 // Watch-face heap on d2mach2 is 128 KB. A 454x454 16bpp buffer is ~403 KB.
+// The light plate is packingFormat=png so it must not decode to that buffer.
 module MemoryBudgetTest {
 
     const WATCH_FACE_HEAP_BYTES = 131072;
     const FULLSCREEN_BUFFER_BYTES = 454 * 454 * 2;
     const MODULE_BUDGET_BYTES = 16 * 1024;
+
+    (:test)
+    function testPackedBackgroundFitsHeap(logger as Test.Logger) as Boolean {
+        var before = System.getSystemStats().usedMemory;
+        var bg = WatchUi.loadResource(Rez.Drawables.Background);
+        var after = System.getSystemStats().usedMemory;
+        var delta = after - before;
+        logger.debug("background usedMemory delta=" + delta.toString()
+            + " after=" + after.toString()
+            + " resource=" + bg.toString());
+        if (after >= WATCH_FACE_HEAP_BYTES) {
+            logger.error("packed background usedMemory " + after.toString()
+                + " at or over the 128 KB watch-face heap");
+            return false;
+        }
+        if (delta >= FULLSCREEN_BUFFER_BYTES) {
+            logger.error("background decoded to a fullscreen 16bpp buffer");
+            return false;
+        }
+        return true;
+    }
 
     (:test)
     function testGeometryAndNumeralsStayTiny(logger as Test.Logger) as Boolean {

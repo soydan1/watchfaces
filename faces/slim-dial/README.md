@@ -3,12 +3,13 @@
 Connect IQ analog watch face for Garmin D2 Mach 2. Stroke-drawn from the
 dials in `reference/`. App name is **Slim Dial**.
 
-Shared analog math comes from `../../shared/source` via `monkey.jungle`.
-Layout ratios stay in `source/HermesGeometry.mc`. Hour glyphs stay in
-`source/HermesNumerals.mc`.
+High-power draws `resources/drawables/hermesbg.png` (`packingFormat="png"`)
+then baton hands. Always-on does **not** blit that plate: black field,
+outline 12 / 3 / 9, hour and minute hands, 1 px cream.
 
-Do not add `reference/*.png` as drawables. They are megabytes; the
-watch-face heap is 128 KB.
+Shared analog math comes from `../../shared/source` via `monkey.jungle`.
+Hand lengths sit in `source/HermesGeometry.mc`. AOD glyphs stay in
+`source/HermesNumerals.mc`.
 
 ## Build
 
