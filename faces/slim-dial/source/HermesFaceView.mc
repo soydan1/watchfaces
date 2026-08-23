@@ -8,14 +8,17 @@ class HermesFaceView extends WatchUi.WatchFace {
 
     private var _isAwake as Boolean;
     private var _partialUpdatesAllowed as Boolean;
+    private var _background as BitmapResource?;
 
     function initialize() {
         WatchFace.initialize();
         _isAwake = true;
         _partialUpdatesAllowed = (WatchUi.WatchFace has :onPartialUpdate);
+        _background = null;
     }
 
     function onLayout(dc as Dc) as Void {
+        _background = WatchUi.loadResource(Rez.Drawables.Background) as BitmapResource;
     }
 
     function onShow() as Void {
@@ -37,7 +40,6 @@ class HermesFaceView extends WatchUi.WatchFace {
     }
 
     // AMOLED AOD is a full low-power redraw, not a clipped seconds tick.
-    // Keep this hook so a future MIP port can opt in without a new type.
     function onPartialUpdate(dc as Dc) as Void {
         if (!_partialUpdatesAllowed) {
             return;
@@ -45,8 +47,7 @@ class HermesFaceView extends WatchUi.WatchFace {
     }
 
     function onUpdate(dc as Dc) as Void {
-        var lowPower = isLowPower();
-        if (lowPower) {
+        if (isLowPower()) {
             drawLowPower(dc);
         } else {
             drawHighPower(dc);
@@ -69,34 +70,17 @@ class HermesFaceView extends WatchUi.WatchFace {
         var cy = height / 2;
         var half = ((width < height) ? width : height) / 2;
         var clockTime = System.getClockTime();
+        var subCy = cy + (half * HermesGeometry.SUBDIAL_CENTER_Y).toNumber();
 
-        dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_LT_GRAY);
+        dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
         dc.clear();
 
-        dc.setColor(0xF4F1EA, Graphics.COLOR_TRANSPARENT);
-        dc.fillCircle(cx, cy, half - 2);
-
-        var innerR = (half * HermesGeometry.INNER_DISC).toNumber();
-        dc.setColor(0xE4E0D8, Graphics.COLOR_TRANSPARENT);
-        dc.fillCircle(cx, cy, innerR);
-
-        var ringR = (half * HermesGeometry.CHAPTER_RING).toNumber();
-        dc.setColor(0x222222, Graphics.COLOR_TRANSPARENT);
-        dc.setPenWidth(1);
-        dc.drawCircle(cx, cy, ringR);
-        drawMinuteTicks(dc, cx, cy, half, 0x222222);
-
-        var subCy = cy + (half * HermesGeometry.SUBDIAL_CENTER_Y).toNumber();
-        var subR = (half * HermesGeometry.SUBDIAL_RADIUS).toNumber();
-        dc.setColor(0xDCD8D0, Graphics.COLOR_TRANSPARENT);
-        dc.fillCircle(cx, subCy, subR);
-        dc.setColor(0x222222, Graphics.COLOR_TRANSPARENT);
-        dc.setPenWidth(1);
-        dc.drawCircle(cx, subCy, subR);
-        drawSubdialTicks(dc, cx, subCy, half, 0x222222);
-
-        var numeralR = (half * HermesGeometry.NUMERAL_RING).toNumber();
-        HermesNumerals.drawAllHours(dc, cx, cy, numeralR, 0x111111);
+        if (_background != null) {
+            dc.drawBitmap(0, 0, _background);
+        } else {
+            dc.setColor(0xF4F1EA, Graphics.COLOR_TRANSPARENT);
+            dc.fillCircle(cx, cy, half - 2);
+        }
 
         drawHands(dc, cx, cy, subCy, half, clockTime, 0x111111, true);
 
@@ -114,6 +98,7 @@ class HermesFaceView extends WatchUi.WatchFace {
         var cy = height / 2 + shift[1];
         var half = ((width < height) ? width : height) / 2;
 
+        // Never blit the light plate in AOD — it would light every pixel.
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
         dc.clear();
 
@@ -122,8 +107,7 @@ class HermesFaceView extends WatchUi.WatchFace {
         dc.setPenWidth(1);
         dc.drawCircle(cx, cy, (half * HermesGeometry.CHAPTER_RING).toNumber());
 
-        // AOD: 12 / 3 / 9 only, 1 px outline. Skip 6 — a fourth label
-        // blows the 10% pixel budget.
+        // 12 / 3 / 9 only, 1 px outline. Skip 6 for the 10% budget.
         var numeralR = (half * HermesGeometry.NUMERAL_RING).toNumber();
         var aodPen = HermesNumerals.AOD_PEN;
         HermesNumerals.drawHourLabel(dc, 12, cx, cy - numeralR, cream, aodPen);
@@ -134,62 +118,6 @@ class HermesFaceView extends WatchUi.WatchFace {
 
         dc.setColor(cream, Graphics.COLOR_TRANSPARENT);
         dc.fillCircle(cx, cy, (half * HermesGeometry.MAIN_ARBOR).toNumber());
-    }
-
-    private function drawMinuteTicks(dc as Dc, cx as Number, cy as Number, half as Number, color as Number) as Void {
-        dc.setColor(color, Graphics.COLOR_TRANSPARENT);
-        dc.setPenWidth(1);
-        var inner = half * HermesGeometry.MINUTE_TICK_INNER;
-        var outer = half * HermesGeometry.MINUTE_TICK_OUTER;
-        var hourInner = half * HermesGeometry.HOUR_TICK_INNER;
-        var hourOuter = half * HermesGeometry.HOUR_TICK_OUTER;
-        var i = 0;
-        for (i = 0; i < 60; i++) {
-            if (i % 5 == 0) {
-                continue;
-            }
-            var angle = (i / 60.0) * Math.PI * 2.0 - Math.PI / 2.0;
-            var cos = Math.cos(angle);
-            var sin = Math.sin(angle);
-            dc.drawLine(
-                cx + (cos * inner).toNumber(),
-                cy + (sin * inner).toNumber(),
-                cx + (cos * outer).toNumber(),
-                cy + (sin * outer).toNumber()
-            );
-        }
-        for (i = 0; i < 12; i++) {
-            var hourAngle = (i / 12.0) * Math.PI * 2.0 - Math.PI / 2.0;
-            var hcos = Math.cos(hourAngle);
-            var hsin = Math.sin(hourAngle);
-            dc.drawLine(
-                cx + (hcos * hourInner).toNumber(),
-                cy + (hsin * hourInner).toNumber(),
-                cx + (hcos * hourOuter).toNumber(),
-                cy + (hsin * hourOuter).toNumber()
-            );
-        }
-    }
-
-    private function drawSubdialTicks(dc as Dc, cx as Number, cy as Number, half as Number, color as Number) as Void {
-        dc.setColor(color, Graphics.COLOR_TRANSPARENT);
-        dc.setPenWidth(1);
-        var inner = half * HermesGeometry.SUBDIAL_TICK_INNER;
-        var outer = half * HermesGeometry.SUBDIAL_TICK_OUTER;
-        var cardInner = half * HermesGeometry.SUBDIAL_CARDINAL_INNER;
-        var i = 0;
-        for (i = 0; i < 12; i++) {
-            var angle = (i / 12.0) * Math.PI * 2.0 - Math.PI / 2.0;
-            var cos = Math.cos(angle);
-            var sin = Math.sin(angle);
-            var from = (i % 3 == 0) ? cardInner : inner;
-            dc.drawLine(
-                cx + (cos * from).toNumber(),
-                cy + (sin * from).toNumber(),
-                cx + (cos * outer).toNumber(),
-                cy + (sin * outer).toNumber()
-            );
-        }
     }
 
     private function drawHands(
