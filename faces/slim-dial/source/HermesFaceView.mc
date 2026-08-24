@@ -11,6 +11,9 @@ class HermesFaceView extends WatchUi.WatchFace {
     private var _hourHand as BitmapResource?;
     private var _minuteHand as BitmapResource?;
     private var _secondHand as BitmapResource?;
+    private var _backgroundDark as BitmapResource?;
+    private var _hourHandDark as BitmapResource?;
+    private var _minuteHandDark as BitmapResource?;
     private var _xf as AffineTransform;
 
     function initialize() {
@@ -21,6 +24,9 @@ class HermesFaceView extends WatchUi.WatchFace {
         _hourHand = null;
         _minuteHand = null;
         _secondHand = null;
+        _backgroundDark = null;
+        _hourHandDark = null;
+        _minuteHandDark = null;
         _xf = new AffineTransform();
     }
 
@@ -29,6 +35,9 @@ class HermesFaceView extends WatchUi.WatchFace {
         _hourHand = WatchUi.loadResource(Rez.Drawables.HourHand) as BitmapResource;
         _minuteHand = WatchUi.loadResource(Rez.Drawables.MinuteHand) as BitmapResource;
         _secondHand = WatchUi.loadResource(Rez.Drawables.SecondHand) as BitmapResource;
+        _backgroundDark = WatchUi.loadResource(Rez.Drawables.BackgroundDark) as BitmapResource;
+        _hourHandDark = WatchUi.loadResource(Rez.Drawables.HourHandDark) as BitmapResource;
+        _minuteHandDark = WatchUi.loadResource(Rez.Drawables.MinuteHandDark) as BitmapResource;
     }
 
     function onShow() as Void {
@@ -104,13 +113,12 @@ class HermesFaceView extends WatchUi.WatchFace {
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
         dc.clear();
 
-        var cream = 0xE8E0D0;
-        var half = ((width < height) ? width : height) / 2;
-        var numeralR = (half * HermesGeometry.NUMERAL_RING).toNumber();
-        HermesNumerals.drawAodHours(dc, cx, cy, numeralR, cream);
+        if (_backgroundDark != null) {
+            dc.drawBitmap(shift[0], shift[1], _backgroundDark);
+        }
 
-        drawSprite(dc, _hourHand, cx, cy, AnalogGeometry.hourAngle(clockTime.hour, clockTime.min));
-        drawSprite(dc, _minuteHand, cx, cy, AnalogGeometry.minuteAngle(clockTime.min));
+        drawSprite(dc, _hourHandDark, cx, cy, AnalogGeometry.hourAngle(clockTime.hour, clockTime.min));
+        drawSprite(dc, _minuteHandDark, cx, cy, AnalogGeometry.minuteAngle(clockTime.min));
     }
 
     // Pivot is the center of the hub circle at the bottom of the sprite.
