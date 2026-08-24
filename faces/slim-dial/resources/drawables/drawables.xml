@@ -4,4 +4,7 @@
     <bitmap id="HourHand" filename="hour.png" packingFormat="png" dithering="none" />
     <bitmap id="MinuteHand" filename="minute.png" packingFormat="png" dithering="none" />
     <bitmap id="SecondHand" filename="second.png" packingFormat="png" dithering="none" />
+    <bitmap id="BackgroundDark" filename="hermesDark.png" packingFormat="png" dithering="none" />
+    <bitmap id="HourHandDark" filename="hourDark.png" packingFormat="png" dithering="none" />
+    <bitmap id="MinuteHandDark" filename="minuteDark.png" packingFormat="png" dithering="none" />
 </drawables>

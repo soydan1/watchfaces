@@ -3,15 +3,10 @@
 Connect IQ analog watch face for Garmin D2 Mach 2. Stroke-drawn from the
 dials in `reference/`. App name is **Slim Dial**.
 
-High-power draws `resources/drawables/hermesbg.png` then the PNG hands
-(`hour.png`, `minute.png`, `second.png`). Hour and minute rotate around
-the hub at the bottom of each sprite, on the main arbor. Seconds uses
-the same bottom-hub pivot on the 6 o'clock subdial. Always-on keeps the
-plate-style outline 12 / 3 / 9 and the hour/minute sprites (no seconds).
-
-Shared analog math comes from `../../shared/source` via `monkey.jungle`.
-Hand lengths sit in `source/HermesGeometry.mc`. AOD glyphs stay in
-`source/HermesNumerals.mc`.
+High-power draws `hermesbg.png` plus `hour.png` / `minute.png` /
+`second.png`. Always-on draws `hermesDark.png` plus `hourDark.png` /
+`minuteDark.png` (no seconds), shifted 1 px for AMOLED burn-in. Hubs
+are the bottom circle of each hand sprite.
 
 ## Build
 

@@ -18,6 +18,9 @@ module MemoryBudgetTest {
         var hour = WatchUi.loadResource(Rez.Drawables.HourHand);
         var minute = WatchUi.loadResource(Rez.Drawables.MinuteHand);
         var second = WatchUi.loadResource(Rez.Drawables.SecondHand);
+        var bgDark = WatchUi.loadResource(Rez.Drawables.BackgroundDark);
+        var hourDark = WatchUi.loadResource(Rez.Drawables.HourHandDark);
+        var minuteDark = WatchUi.loadResource(Rez.Drawables.MinuteHandDark);
         var after = System.getSystemStats().usedMemory;
         var delta = after - before;
         logger.debug("background usedMemory delta=" + delta.toString()
@@ -25,7 +28,10 @@ module MemoryBudgetTest {
             + " bg=" + bg.toString()
             + " hour=" + hour.toString()
             + " minute=" + minute.toString()
-            + " second=" + second.toString());
+            + " second=" + second.toString()
+            + " bgDark=" + bgDark.toString()
+            + " hourDark=" + hourDark.toString()
+            + " minuteDark=" + minuteDark.toString());
         if (after >= WATCH_FACE_HEAP_BYTES) {
             logger.error("packed background usedMemory " + after.toString()
                 + " at or over the 128 KB watch-face heap");
