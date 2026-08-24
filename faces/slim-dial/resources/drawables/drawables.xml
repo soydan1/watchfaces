@@ -1,5 +1,7 @@
 <drawables xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://developer.garmin.com/downloads/connect-iq/resources.xsd">
     <bitmap id="LauncherIcon" filename="launcher_icon.svg" dithering="none" />
-    <!-- d2mach2 supports png packing; the 454x454 plate stays in flash, not a 16bpp heap buffer. -->
     <bitmap id="Background" filename="hermesbg.png" packingFormat="png" dithering="none" />
+    <bitmap id="HourHand" filename="hour.png" packingFormat="png" dithering="none" />
+    <bitmap id="MinuteHand" filename="minute.png" packingFormat="png" dithering="none" />
+    <bitmap id="SecondHand" filename="second.png" packingFormat="png" dithering="none" />
 </drawables>
