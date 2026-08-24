@@ -9,6 +9,9 @@ module HermesGeometry {
     const INNER_DISC = 0.72;
     const NUMERAL_RING = 0.85;
 
-    // Seconds subdial arbor on hermesbg.png, y = 227 + 0.260*227.
-    const SUBDIAL_CENTER_Y = 0.260;
+    // Seconds hub on the 454x454 plate. Origin is the frame top-left.
+    // Bottom of second.png sits at this point (Figma: 225, 338).
+    const SECOND_PIVOT_X = 225;
+    const SECOND_PIVOT_Y = 338;
+    const DESIGN_SIZE = 454;
 }

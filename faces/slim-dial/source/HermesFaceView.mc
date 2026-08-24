@@ -77,9 +77,9 @@ class HermesFaceView extends WatchUi.WatchFace {
         var height = dc.getHeight();
         var cx = width / 2;
         var cy = height / 2;
-        var half = ((width < height) ? width : height) / 2;
         var clockTime = System.getClockTime();
-        var subCy = cy + (half * HermesGeometry.SUBDIAL_CENTER_Y).toNumber();
+        var subCx = (width * HermesGeometry.SECOND_PIVOT_X / HermesGeometry.DESIGN_SIZE).toNumber();
+        var subCy = (height * HermesGeometry.SECOND_PIVOT_Y / HermesGeometry.DESIGN_SIZE).toNumber();
 
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
         dc.clear();
@@ -90,7 +90,7 @@ class HermesFaceView extends WatchUi.WatchFace {
 
         drawSprite(dc, _hourHand, cx, cy, AnalogGeometry.hourAngle(clockTime.hour, clockTime.min));
         drawSprite(dc, _minuteHand, cx, cy, AnalogGeometry.minuteAngle(clockTime.min));
-        drawSprite(dc, _secondHand, cx, subCy, AnalogGeometry.secondAngle(clockTime.sec));
+        drawSprite(dc, _secondHand, subCx, subCy, AnalogGeometry.secondAngle(clockTime.sec));
     }
 
     private function drawLowPower(dc as Dc) as Void {
