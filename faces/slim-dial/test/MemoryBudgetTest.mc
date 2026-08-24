@@ -15,11 +15,17 @@ module MemoryBudgetTest {
     function testPackedBackgroundFitsHeap(logger as Test.Logger) as Boolean {
         var before = System.getSystemStats().usedMemory;
         var bg = WatchUi.loadResource(Rez.Drawables.Background);
+        var hour = WatchUi.loadResource(Rez.Drawables.HourHand);
+        var minute = WatchUi.loadResource(Rez.Drawables.MinuteHand);
+        var second = WatchUi.loadResource(Rez.Drawables.SecondHand);
         var after = System.getSystemStats().usedMemory;
         var delta = after - before;
         logger.debug("background usedMemory delta=" + delta.toString()
             + " after=" + after.toString()
-            + " resource=" + bg.toString());
+            + " bg=" + bg.toString()
+            + " hour=" + hour.toString()
+            + " minute=" + minute.toString()
+            + " second=" + second.toString());
         if (after >= WATCH_FACE_HEAP_BYTES) {
             logger.error("packed background usedMemory " + after.toString()
                 + " at or over the 128 KB watch-face heap");

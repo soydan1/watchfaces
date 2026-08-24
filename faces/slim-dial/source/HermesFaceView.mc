@@ -8,16 +8,27 @@ class HermesFaceView extends WatchUi.WatchFace {
     private var _isAwake as Boolean;
     private var _partialUpdatesAllowed as Boolean;
     private var _background as BitmapResource?;
+    private var _hourHand as BitmapResource?;
+    private var _minuteHand as BitmapResource?;
+    private var _secondHand as BitmapResource?;
+    private var _xf as AffineTransform;
 
     function initialize() {
         WatchFace.initialize();
         _isAwake = true;
         _partialUpdatesAllowed = (WatchUi.WatchFace has :onPartialUpdate);
         _background = null;
+        _hourHand = null;
+        _minuteHand = null;
+        _secondHand = null;
+        _xf = new AffineTransform();
     }
 
     function onLayout(dc as Dc) as Void {
         _background = WatchUi.loadResource(Rez.Drawables.Background) as BitmapResource;
+        _hourHand = WatchUi.loadResource(Rez.Drawables.HourHand) as BitmapResource;
+        _minuteHand = WatchUi.loadResource(Rez.Drawables.MinuteHand) as BitmapResource;
+        _secondHand = WatchUi.loadResource(Rez.Drawables.SecondHand) as BitmapResource;
     }
 
     function onShow() as Void {
@@ -75,13 +86,11 @@ class HermesFaceView extends WatchUi.WatchFace {
 
         if (_background != null) {
             dc.drawBitmap(0, 0, _background);
-        } else {
-            dc.setColor(0xF4F1EA, Graphics.COLOR_TRANSPARENT);
-            dc.fillCircle(cx, cy, half - 2);
         }
 
-        drawHands(dc, cx, cy, subCy, half, clockTime, 0x1A1A1A, 0x6A6A6A, true);
-        drawHub(dc, cx, cy, half, 0x111111, 0xE8E4DC, true);
+        drawSprite(dc, _hourHand, cx, cy, AnalogGeometry.hourAngle(clockTime.hour, clockTime.min));
+        drawSprite(dc, _minuteHand, cx, cy, AnalogGeometry.minuteAngle(clockTime.min));
+        drawSprite(dc, _secondHand, cx, subCy, AnalogGeometry.secondAngle(clockTime.sec));
     }
 
     private function drawLowPower(dc as Dc) as Void {
@@ -91,81 +100,40 @@ class HermesFaceView extends WatchUi.WatchFace {
         var shift = AnalogGeometry.burnInShift(clockTime.min);
         var cx = width / 2 + shift[0];
         var cy = height / 2 + shift[1];
-        var half = ((width < height) ? width : height) / 2;
 
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
         dc.clear();
 
         var cream = 0xE8E0D0;
+        var half = ((width < height) ? width : height) / 2;
         var numeralR = (half * HermesGeometry.NUMERAL_RING).toNumber();
         HermesNumerals.drawAodHours(dc, cx, cy, numeralR, cream);
 
-        drawHands(dc, cx, cy, cy, half, clockTime, cream, 0xC4B8A0, false);
-        drawHub(dc, cx, cy, half, cream, cream, false);
+        drawSprite(dc, _hourHand, cx, cy, AnalogGeometry.hourAngle(clockTime.hour, clockTime.min));
+        drawSprite(dc, _minuteHand, cx, cy, AnalogGeometry.minuteAngle(clockTime.min));
     }
 
-    private function drawHands(
+    // Pivot is the center of the hub circle at the bottom of the sprite.
+    private function drawSprite(
         dc as Dc,
+        bmp as BitmapResource?,
         cx as Number,
         cy as Number,
-        subCy as Number,
-        half as Number,
-        clockTime as ClockTime,
-        dark as Number,
-        light as Number,
-        drawSeconds as Boolean
+        angle as Float
     ) as Void {
-        var hourLen = (half * HermesGeometry.HOUR_HAND_LEN).toNumber();
-        var hourTail = (half * HermesGeometry.HAND_TAIL).toNumber();
-        var hourW = (half * HermesGeometry.HOUR_HAND_WIDTH).toNumber();
-        var hourAng = AnalogGeometry.hourAngle(clockTime.hour, clockTime.min);
-
-        var minLen = (half * HermesGeometry.MINUTE_HAND_LEN).toNumber();
-        var minW = (half * HermesGeometry.MINUTE_HAND_WIDTH).toNumber();
-        var minAng = AnalogGeometry.minuteAngle(clockTime.min);
-
-        dc.setColor(light, Graphics.COLOR_TRANSPARENT);
-        dc.fillPolygon(AnalogGeometry.dauphineLeft(cx, cy, hourAng, hourLen, hourTail, hourW));
-        dc.fillPolygon(AnalogGeometry.dauphineLeft(cx, cy, minAng, minLen, hourTail, minW));
-        dc.setColor(dark, Graphics.COLOR_TRANSPARENT);
-        dc.fillPolygon(AnalogGeometry.dauphineRight(cx, cy, hourAng, hourLen, hourTail, hourW));
-        dc.fillPolygon(AnalogGeometry.dauphineRight(cx, cy, minAng, minLen, hourTail, minW));
-
-        if (drawSeconds) {
-            var secAng = AnalogGeometry.secondAngle(clockTime.sec);
-            var secLen = (half * HermesGeometry.SECOND_HAND_LEN).toNumber();
-            var secTail = (half * HermesGeometry.SECOND_TAIL).toNumber();
-            var secW = (half * HermesGeometry.SECOND_HAND_WIDTH).toNumber();
-            dc.setColor(0x8A1A1A, Graphics.COLOR_TRANSPARENT);
-            dc.fillPolygon(AnalogGeometry.needlePolygon(cx, subCy, secAng, secLen, secTail, secW));
-            var cw = AnalogGeometry.rotate(cx, subCy, secAng, 0, (secTail * 0.62) as Numeric);
-            dc.fillCircle(cw[0].toNumber(), cw[1].toNumber(), (half * HermesGeometry.SECOND_COUNTERWEIGHT).toNumber());
-            var tip = AnalogGeometry.rotate(cx, subCy, secAng, 0, (-secLen) as Numeric);
-            dc.fillCircle(tip[0].toNumber(), tip[1].toNumber(), 1);
+        if (bmp == null) {
+            return;
         }
-    }
-
-    private function drawHub(
-        dc as Dc,
-        cx as Number,
-        cy as Number,
-        half as Number,
-        ring as Number,
-        pip as Number,
-        highPower as Boolean
-    ) as Void {
-        dc.setColor(ring, Graphics.COLOR_TRANSPARENT);
-        dc.fillCircle(cx, cy, (half * HermesGeometry.MAIN_ARBOR).toNumber());
-        dc.setColor(pip, Graphics.COLOR_TRANSPARENT);
-        dc.fillCircle(cx, cy, (half * HermesGeometry.MAIN_ARBOR_PIP).toNumber());
-        dc.setColor(ring, Graphics.COLOR_TRANSPARENT);
-        dc.fillCircle(cx, cy, (half * HermesGeometry.MAIN_ARBOR_PIN).toNumber());
-        if (highPower) {
-            var subCy = cy + (half * HermesGeometry.SUBDIAL_CENTER_Y).toNumber();
-            dc.setColor(0x111111, Graphics.COLOR_TRANSPARENT);
-            dc.fillCircle(cx, subCy, (half * HermesGeometry.SUB_ARBOR).toNumber());
-            dc.setColor(0xE8E4DC, Graphics.COLOR_TRANSPARENT);
-            dc.fillCircle(cx, subCy, (half * HermesGeometry.SUB_ARBOR_PIN).toNumber());
-        }
+        var pw = bmp.getWidth().toFloat();
+        var ph = bmp.getHeight().toFloat();
+        var pivotX = pw / 2.0;
+        var pivotY = ph - (pw / 2.0);
+        _xf.setToTranslation(cx.toFloat(), cy.toFloat());
+        _xf.rotate(angle);
+        _xf.translate(-pivotX, -pivotY);
+        dc.drawBitmap2(0, 0, bmp, {
+            :transform => _xf,
+            :filterMode => Graphics.FILTER_MODE_BILINEAR
+        });
     }
 }
