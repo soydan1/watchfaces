@@ -1,0 +1,6 @@
+project.manifest = manifest.xml
+
+# Explicit (rather than relying on the default Jungle's recursive **.mc glob)
+# so that adding a test/ directory later can't accidentally get pulled into
+# release/debug builds. Test-only sources live in monkey.test.jungle instead.
+base.sourcePath = source

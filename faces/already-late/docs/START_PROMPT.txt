@@ -1,0 +1,9 @@
+Follow AGENT.md. You are in faces/already-late of the watchfaces repo, a Garmin Connect IQ analog watch face for D2 Mach 2. Do not edit /home/agent/projects/coach or /home/agent/projects/hermes-face.
+
+Read AGENT.md, DESIGN.md, docs/ASSETS.md, reference/dial.png and the four hand sprites, then source/LateFaceView.mc.
+
+The dial blit and bitmap hands already compile. High power and AOD share that drawing; AOD drops seconds and keeps the burn-in shift.
+
+Never add the raw reference PNGs as drawables. Do not commit unless asked. Rebuild with:
+
+monkeyc -o bin/LateFace.prg -f monkey.jungle -y ~/GarminDeveloperKeys/developer_key -d d2mach2 -w

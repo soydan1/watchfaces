@@ -1,0 +1,31 @@
+<drawables xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://developer.garmin.com/downloads/connect-iq/resources.xsd">
+    <bitmap id="LauncherIcon" filename="launcher_icon.svg" dithering="none" />
+    <bitmap id="Dial" filename="dial.png" dithering="none" packingFormat="png">
+        <palette disableTransparency="true">
+            <color>000000</color>
+            <color>401804</color>
+            <color>A05010</color>
+            <color>F08018</color>
+        </palette>
+    </bitmap>
+    <bitmap id="HourHand" filename="hour.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>F08018</color>
+        </palette>
+    </bitmap>
+    <bitmap id="MinuteHand" filename="minute.png" dithering="none" packingFormat="png">
+        <palette disableTransparency="true">
+            <color>F08018</color>
+        </palette>
+    </bitmap>
+    <bitmap id="SecondHand" filename="second.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>F08018</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Arbor" filename="arbor.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>F08018</color>
+        </palette>
+    </bitmap>
+</drawables>
