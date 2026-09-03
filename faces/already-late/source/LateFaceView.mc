@@ -102,11 +102,10 @@ class LateFaceView extends WatchUi.WatchFace {
         var clockTime = System.getClockTime();
         var cx = width / 2;
         var cy = height / 2;
-        if (!drawSeconds) {
-            var shift = LateGeometry.burnInShift(clockTime.min);
-            cx += shift[0];
-            cy += shift[1];
-        }
+        // Same 1 px orbit in high power and AOD so the crown/text do not jump.
+        var shift = LateGeometry.burnInShift(clockTime.min);
+        cx += shift[0];
+        cy += shift[1];
 
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
         dc.clear();
