@@ -28,4 +28,100 @@
             <color>F08018</color>
         </palette>
     </bitmap>
+    <bitmap id="Date1" filename="date1.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>FF4F54</color>
+            <color>C03C40</color>
+            <color>802830</color>
+            <color>401418</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Date2" filename="date2.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>FF4F54</color>
+            <color>C03C40</color>
+            <color>802830</color>
+            <color>401418</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Date3" filename="date3.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>FF4F54</color>
+            <color>C03C40</color>
+            <color>802830</color>
+            <color>401418</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Date4" filename="date4.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>FF4F54</color>
+            <color>C03C40</color>
+            <color>802830</color>
+            <color>401418</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Date5" filename="date5.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>FF4F54</color>
+            <color>C03C40</color>
+            <color>802830</color>
+            <color>401418</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Date6" filename="date6.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>FF4F54</color>
+            <color>C03C40</color>
+            <color>802830</color>
+            <color>401418</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Date7" filename="date7.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>FF4F54</color>
+            <color>C03C40</color>
+            <color>802830</color>
+            <color>401418</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Date8" filename="date8.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>FF4F54</color>
+            <color>C03C40</color>
+            <color>802830</color>
+            <color>401418</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Date9" filename="date9.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>FF4F54</color>
+            <color>C03C40</color>
+            <color>802830</color>
+            <color>401418</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Date10" filename="date10.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>FF4F54</color>
+            <color>C03C40</color>
+            <color>802830</color>
+            <color>401418</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Date11" filename="date11.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>FF4F54</color>
+            <color>C03C40</color>
+            <color>802830</color>
+            <color>401418</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Date12" filename="date12.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>FF4F54</color>
+            <color>C03C40</color>
+            <color>802830</color>
+            <color>401418</color>
+        </palette>
+    </bitmap>
 </drawables>

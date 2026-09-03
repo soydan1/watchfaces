@@ -1,6 +1,8 @@
 import Toybox.Graphics;
 import Toybox.Lang;
 import Toybox.System;
+import Toybox.Time;
+import Toybox.Time.Gregorian;
 import Toybox.WatchUi;
 
 class LateFaceView extends WatchUi.WatchFace {
@@ -12,6 +14,7 @@ class LateFaceView extends WatchUi.WatchFace {
     private var _minuteHand as BitmapType?;
     private var _secondHand as BitmapType?;
     private var _arbor as BitmapType?;
+    private var _dateGlyphs as Array<BitmapType?>;
     private var _handXform as AffineTransform;
     private var _handOpts as { :transform as AffineTransform, :filterMode as FilterMode };
 
@@ -19,6 +22,7 @@ class LateFaceView extends WatchUi.WatchFace {
         WatchFace.initialize();
         _isAwake = true;
         _partialUpdatesAllowed = (WatchUi.WatchFace has :onPartialUpdate);
+        _dateGlyphs = new [12] as Array<BitmapType?>;
         _handXform = new AffineTransform();
         _handOpts = {
             :transform => _handXform,
@@ -32,6 +36,18 @@ class LateFaceView extends WatchUi.WatchFace {
         _minuteHand = WatchUi.loadResource($.Rez.Drawables.MinuteHand) as BitmapType;
         _secondHand = WatchUi.loadResource($.Rez.Drawables.SecondHand) as BitmapType;
         _arbor = WatchUi.loadResource($.Rez.Drawables.Arbor) as BitmapType;
+        _dateGlyphs[0] = WatchUi.loadResource($.Rez.Drawables.Date1) as BitmapType;
+        _dateGlyphs[1] = WatchUi.loadResource($.Rez.Drawables.Date2) as BitmapType;
+        _dateGlyphs[2] = WatchUi.loadResource($.Rez.Drawables.Date3) as BitmapType;
+        _dateGlyphs[3] = WatchUi.loadResource($.Rez.Drawables.Date4) as BitmapType;
+        _dateGlyphs[4] = WatchUi.loadResource($.Rez.Drawables.Date5) as BitmapType;
+        _dateGlyphs[5] = WatchUi.loadResource($.Rez.Drawables.Date6) as BitmapType;
+        _dateGlyphs[6] = WatchUi.loadResource($.Rez.Drawables.Date7) as BitmapType;
+        _dateGlyphs[7] = WatchUi.loadResource($.Rez.Drawables.Date8) as BitmapType;
+        _dateGlyphs[8] = WatchUi.loadResource($.Rez.Drawables.Date9) as BitmapType;
+        _dateGlyphs[9] = WatchUi.loadResource($.Rez.Drawables.Date10) as BitmapType;
+        _dateGlyphs[10] = WatchUi.loadResource($.Rez.Drawables.Date11) as BitmapType;
+        _dateGlyphs[11] = WatchUi.loadResource($.Rez.Drawables.Date12) as BitmapType;
     }
 
     function onShow() as Void {
@@ -103,6 +119,8 @@ class LateFaceView extends WatchUi.WatchFace {
             );
         }
 
+        drawDate(dc, cx, cy);
+
         var hourBmp = _hourHand;
         if (hourBmp != null) {
             drawHand(
@@ -150,6 +168,28 @@ class LateFaceView extends WatchUi.WatchFace {
                 cy - LateGeometry.ARBOR_PIVOT_Y,
                 arborBmp
             );
+        }
+    }
+
+    private function drawDate(dc as Dc, cx as Number, cy as Number) as Void {
+        var info = Gregorian.info(Time.now(), Time.FORMAT_SHORT);
+        var numerals = LateGeometry.dateNumerals(info.day);
+        var left = cx - LateGeometry.DIAL_RADIUS;
+        var top = cy - LateGeometry.DIAL_RADIUS;
+        var glyphs = _dateGlyphs;
+        for (var i = 0; i < numerals.size(); i++) {
+            var n = numerals[i];
+            if ((n < 1) || (n > 12)) {
+                continue;
+            }
+            var bmp = glyphs[n - 1];
+            if (bmp != null) {
+                dc.drawBitmap(
+                    left + LateGeometry.DATE_GLYPH_X[n - 1],
+                    top + LateGeometry.DATE_GLYPH_Y[n - 1],
+                    bmp
+                );
+            }
         }
     }
 

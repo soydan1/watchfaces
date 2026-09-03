@@ -22,6 +22,15 @@ module MemoryBudgetTest {
         var hour = LateGeometry.hourAngle(3, 30);
         var minute = LateGeometry.minuteAngle(30);
         var second = LateGeometry.secondAngle(15);
+        var date30 = LateGeometry.dateNumerals(30);
+        if (date30.size() != 3) {
+            logger.error("dateNumerals(30) must return three hour-marks");
+            return false;
+        }
+        if (LateGeometry.dateGlyphX(5) != 256) {
+            logger.error("dateGlyphX(5) must be the crop origin x");
+            return false;
+        }
 
         if (LateGeometry.HOUR_PIVOT_Y != LateGeometry.HOUR_HEIGHT - 29) {
             logger.error("hour pivot must sit 29 px from the bottom of hour.png");

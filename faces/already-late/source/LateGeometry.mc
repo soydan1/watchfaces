@@ -35,6 +35,10 @@ module LateGeometry {
     const DIAL_SIZE = 454;
     const DIAL_RADIUS = 227;
 
+    // Top-left of dateN.png on the 454 plate (2 px pad around the alpha bbox).
+    const DATE_GLYPH_X as Array<Number> = [72, 189, 292, 186, 256, 113, 372, 250, 334, 123, 233, 305] as Array<Number>;
+    const DATE_GLYPH_Y as Array<Number> = [322, 375, 230, 318, 381, 284, 272, 334, 255, 355, 278, 326] as Array<Number>;
+
     // AMOLED always-on: shift 1px each minute so no pixel stays on > 3 min.
     function burnInShift(minute as Number) as Array<Number> {
         var phase = minute % 5;
@@ -65,5 +69,42 @@ module LateGeometry {
 
     function secondAngle(second as Number) as Float {
         return ((second / 60.0) * Math.PI * 2.0) as Float;
+    }
+
+    // Each of 1-12 is used at most once; 30 is 11+10+9 so 12+11+7 is never drawn.
+    function dateNumerals(day as Number) as Array<Number> {
+        if (day < 1) {
+            return [] as Array<Number>;
+        }
+        if (day <= 12) {
+            return [day] as Array<Number>;
+        }
+        if (day <= 23) {
+            return [12, day - 12] as Array<Number>;
+        }
+        if (day == 30) {
+            return [11, 10, 9] as Array<Number>;
+        }
+        if (day == 31) {
+            return [12, 11, 8] as Array<Number>;
+        }
+        if (day > 31) {
+            return [] as Array<Number>;
+        }
+        return [12, 11, day - 23] as Array<Number>;
+    }
+
+    function dateGlyphX(numeral as Number) as Number {
+        if ((numeral < 1) || (numeral > 12)) {
+            return 0;
+        }
+        return DATE_GLYPH_X[numeral - 1];
+    }
+
+    function dateGlyphY(numeral as Number) as Number {
+        if ((numeral < 1) || (numeral > 12)) {
+            return 0;
+        }
+        return DATE_GLYPH_Y[numeral - 1];
     }
 }
