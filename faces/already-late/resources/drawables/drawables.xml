@@ -8,6 +8,13 @@
             <color>F08018</color>
         </palette>
     </bitmap>
+    <bitmap id="AodDial" filename="aod.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>F08018</color>
+            <color>A05010</color>
+            <color>401804</color>
+        </palette>
+    </bitmap>
     <bitmap id="HourHand" filename="hour.png" dithering="none" packingFormat="png">
         <palette>
             <color>F08018</color>

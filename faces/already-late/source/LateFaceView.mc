@@ -10,6 +10,7 @@ class LateFaceView extends WatchUi.WatchFace {
     private var _isAwake as Boolean;
     private var _partialUpdatesAllowed as Boolean;
     private var _dial as BitmapType?;
+    private var _aodDial as BitmapType?;
     private var _hourHand as BitmapType?;
     private var _minuteHand as BitmapType?;
     private var _secondHand as BitmapType?;
@@ -32,6 +33,7 @@ class LateFaceView extends WatchUi.WatchFace {
 
     function onLayout(dc as Dc) as Void {
         _dial = WatchUi.loadResource($.Rez.Drawables.Dial) as BitmapType;
+        _aodDial = WatchUi.loadResource($.Rez.Drawables.AodDial) as BitmapType;
         _hourHand = WatchUi.loadResource($.Rez.Drawables.HourHand) as BitmapType;
         _minuteHand = WatchUi.loadResource($.Rez.Drawables.MinuteHand) as BitmapType;
         _secondHand = WatchUi.loadResource($.Rez.Drawables.SecondHand) as BitmapType;
@@ -93,8 +95,7 @@ class LateFaceView extends WatchUi.WatchFace {
         return !_isAwake;
     }
 
-    // High power and AOD share the same black/orange drawing.
-    // AOD drops the seconds hand and applies the burn-in orbit.
+    // AOD plate has no hour marks so the red date glyphs are the only numerals.
     private function drawFace(dc as Dc, drawSeconds as Boolean) as Void {
         var width = dc.getWidth();
         var height = dc.getHeight();
@@ -110,7 +111,10 @@ class LateFaceView extends WatchUi.WatchFace {
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
         dc.clear();
 
-        var dialBmp = _dial;
+        var dialBmp = drawSeconds ? _dial : _aodDial;
+        if (dialBmp == null) {
+            dialBmp = _dial;
+        }
         if (dialBmp != null) {
             dc.drawBitmap(
                 cx - LateGeometry.DIAL_RADIUS,
