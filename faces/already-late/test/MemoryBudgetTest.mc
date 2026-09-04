@@ -23,8 +23,13 @@ module MemoryBudgetTest {
         var minute = LateGeometry.minuteAngle(30);
         var second = LateGeometry.secondAngle(15);
         var date30 = LateGeometry.dateNumerals(30);
+        var step32 = LateGeometry.stepThousandsNumerals(32);
         if (date30.size() != 3) {
             logger.error("dateNumerals(30) must return three hour-marks");
+            return false;
+        }
+        if (step32.size() < 1) {
+            logger.error("stepThousandsNumerals(32) must return hour-marks");
             return false;
         }
         if (LateGeometry.dateGlyphX(5) != 256) {

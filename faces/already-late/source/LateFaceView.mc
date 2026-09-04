@@ -1,3 +1,4 @@
+import Toybox.ActivityMonitor;
 import Toybox.Graphics;
 import Toybox.Lang;
 import Toybox.System;
@@ -16,6 +17,8 @@ class LateFaceView extends WatchUi.WatchFace {
     private var _secondHand as BitmapType?;
     private var _arbor as BitmapType?;
     private var _dateGlyphs as Array<BitmapType?>;
+    private var _stepGlyphs as Array<BitmapType?>;
+    private var _bothGlyphs as Array<BitmapType?>;
     private var _handXform as AffineTransform;
     private var _handOpts as { :transform as AffineTransform, :filterMode as FilterMode };
 
@@ -24,6 +27,8 @@ class LateFaceView extends WatchUi.WatchFace {
         _isAwake = true;
         _partialUpdatesAllowed = (WatchUi.WatchFace has :onPartialUpdate);
         _dateGlyphs = new [12] as Array<BitmapType?>;
+        _stepGlyphs = new [12] as Array<BitmapType?>;
+        _bothGlyphs = new [12] as Array<BitmapType?>;
         _handXform = new AffineTransform();
         _handOpts = {
             :transform => _handXform,
@@ -50,6 +55,30 @@ class LateFaceView extends WatchUi.WatchFace {
         _dateGlyphs[9] = WatchUi.loadResource($.Rez.Drawables.Date10) as BitmapType;
         _dateGlyphs[10] = WatchUi.loadResource($.Rez.Drawables.Date11) as BitmapType;
         _dateGlyphs[11] = WatchUi.loadResource($.Rez.Drawables.Date12) as BitmapType;
+        _stepGlyphs[0] = WatchUi.loadResource($.Rez.Drawables.Step1) as BitmapType;
+        _stepGlyphs[1] = WatchUi.loadResource($.Rez.Drawables.Step2) as BitmapType;
+        _stepGlyphs[2] = WatchUi.loadResource($.Rez.Drawables.Step3) as BitmapType;
+        _stepGlyphs[3] = WatchUi.loadResource($.Rez.Drawables.Step4) as BitmapType;
+        _stepGlyphs[4] = WatchUi.loadResource($.Rez.Drawables.Step5) as BitmapType;
+        _stepGlyphs[5] = WatchUi.loadResource($.Rez.Drawables.Step6) as BitmapType;
+        _stepGlyphs[6] = WatchUi.loadResource($.Rez.Drawables.Step7) as BitmapType;
+        _stepGlyphs[7] = WatchUi.loadResource($.Rez.Drawables.Step8) as BitmapType;
+        _stepGlyphs[8] = WatchUi.loadResource($.Rez.Drawables.Step9) as BitmapType;
+        _stepGlyphs[9] = WatchUi.loadResource($.Rez.Drawables.Step10) as BitmapType;
+        _stepGlyphs[10] = WatchUi.loadResource($.Rez.Drawables.Step11) as BitmapType;
+        _stepGlyphs[11] = WatchUi.loadResource($.Rez.Drawables.Step12) as BitmapType;
+        _bothGlyphs[0] = WatchUi.loadResource($.Rez.Drawables.Both1) as BitmapType;
+        _bothGlyphs[1] = WatchUi.loadResource($.Rez.Drawables.Both2) as BitmapType;
+        _bothGlyphs[2] = WatchUi.loadResource($.Rez.Drawables.Both3) as BitmapType;
+        _bothGlyphs[3] = WatchUi.loadResource($.Rez.Drawables.Both4) as BitmapType;
+        _bothGlyphs[4] = WatchUi.loadResource($.Rez.Drawables.Both5) as BitmapType;
+        _bothGlyphs[5] = WatchUi.loadResource($.Rez.Drawables.Both6) as BitmapType;
+        _bothGlyphs[6] = WatchUi.loadResource($.Rez.Drawables.Both7) as BitmapType;
+        _bothGlyphs[7] = WatchUi.loadResource($.Rez.Drawables.Both8) as BitmapType;
+        _bothGlyphs[8] = WatchUi.loadResource($.Rez.Drawables.Both9) as BitmapType;
+        _bothGlyphs[9] = WatchUi.loadResource($.Rez.Drawables.Both10) as BitmapType;
+        _bothGlyphs[10] = WatchUi.loadResource($.Rez.Drawables.Both11) as BitmapType;
+        _bothGlyphs[11] = WatchUi.loadResource($.Rez.Drawables.Both12) as BitmapType;
     }
 
     function onShow() as Void {
@@ -95,7 +124,8 @@ class LateFaceView extends WatchUi.WatchFace {
         return !_isAwake;
     }
 
-    // High power: numberless plate + red date. AOD: numbered plate, no date.
+    // High power: numberless plate + red date / blue steps / yellow overlap.
+    // AOD: numbered plate, no marks.
     private function drawFace(dc as Dc, drawSeconds as Boolean) as Void {
         var width = dc.getWidth();
         var height = dc.getHeight();
@@ -123,7 +153,7 @@ class LateFaceView extends WatchUi.WatchFace {
         }
 
         if (drawSeconds) {
-            drawDate(dc, cx, cy);
+            drawMarks(dc, cx, cy);
         }
 
         var hourBmp = _hourHand;
@@ -176,18 +206,15 @@ class LateFaceView extends WatchUi.WatchFace {
         }
     }
 
-    private function drawDate(dc as Dc, cx as Number, cy as Number) as Void {
+    private function drawMarks(dc as Dc, cx as Number, cy as Number) as Void {
         var info = Gregorian.info(Time.now(), Time.FORMAT_SHORT);
-        var numerals = LateGeometry.dateNumerals(info.day);
+        var dateNums = LateGeometry.dateNumerals(info.day);
+        var stepNums = LateGeometry.stepThousandsNumerals(stepThousands());
         var left = cx - LateGeometry.DIAL_RADIUS;
         var top = cy - LateGeometry.DIAL_RADIUS;
-        var glyphs = _dateGlyphs;
-        for (var i = 0; i < numerals.size(); i++) {
-            var n = numerals[i];
-            if ((n < 1) || (n > 12)) {
-                continue;
-            }
-            var bmp = glyphs[n - 1];
+        for (var n = 1; n <= 12; n++) {
+            var role = LateGeometry.numeralRole(n, dateNums, stepNums);
+            var bmp = glyphForRole(role, n);
             if (bmp != null) {
                 dc.drawBitmap(
                     left + LateGeometry.DATE_GLYPH_X[n - 1],
@@ -196,6 +223,28 @@ class LateFaceView extends WatchUi.WatchFace {
                 );
             }
         }
+    }
+
+    private function glyphForRole(role as Number, n as Number) as BitmapType? {
+        if (role == LateGeometry.MARK_DATE) {
+            return _dateGlyphs[n - 1];
+        }
+        if (role == LateGeometry.MARK_STEPS) {
+            return _stepGlyphs[n - 1];
+        }
+        if (role == LateGeometry.MARK_BOTH) {
+            return _bothGlyphs[n - 1];
+        }
+        return null;
+    }
+
+    private function stepThousands() as Number {
+        var info = ActivityMonitor.getInfo();
+        var steps = info.steps;
+        if (steps == null) {
+            return 0;
+        }
+        return steps / 1000;
     }
 
     private function drawHand(

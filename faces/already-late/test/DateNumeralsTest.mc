@@ -95,6 +95,78 @@ module DateNumeralsTest {
     }
 
     (:test)
+    function testStepThousandsEncoding(logger as Test.Logger) as Boolean {
+        if (LateGeometry.stepThousandsNumerals(0).size() != 0) {
+            logger.error("under 1000 steps should mark nothing");
+            return false;
+        }
+        if (!same(LateGeometry.stepThousandsNumerals(5), [5] as Array<Number>)) {
+            logger.error("5000 steps should mark 5");
+            return false;
+        }
+        if (!same(LateGeometry.stepThousandsNumerals(15), [12, 3] as Array<Number>)) {
+            logger.error("15000 steps should mark 12+3");
+            return false;
+        }
+        if (!same(LateGeometry.stepThousandsNumerals(30), [11, 10, 9] as Array<Number>)) {
+            logger.error("30000 steps should mark 11+10+9");
+            return false;
+        }
+        if (sumOf(LateGeometry.stepThousandsNumerals(32)) != 32) {
+            logger.error("32000 steps must still sum to 32");
+            return false;
+        }
+        if (sumOf(LateGeometry.stepThousandsNumerals(78)) != 78) {
+            logger.error("78000 cap should use all hour-marks");
+            return false;
+        }
+        if (sumOf(LateGeometry.stepThousandsNumerals(100)) != 78) {
+            logger.error("over 78000 should cap at 78");
+            return false;
+        }
+        return true;
+    }
+
+    (:test)
+    function testOverlapIsYellow(logger as Test.Logger) as Boolean {
+        var date5 = LateGeometry.dateNumerals(5);
+        var step5 = LateGeometry.stepThousandsNumerals(5);
+        if (LateGeometry.numeralRole(5, date5, step5) != LateGeometry.MARK_BOTH) {
+            logger.error("same numeral for date and steps should be yellow");
+            return false;
+        }
+        var date17 = LateGeometry.dateNumerals(17);
+        var step5k = LateGeometry.stepThousandsNumerals(5);
+        if (LateGeometry.numeralRole(12, date17, step5k) != LateGeometry.MARK_DATE) {
+            logger.error("12 on the 17th should stay red");
+            return false;
+        }
+        if (LateGeometry.numeralRole(5, date17, step5k) != LateGeometry.MARK_BOTH) {
+            logger.error("5 on the 17th with 5k steps should be yellow");
+            return false;
+        }
+        if (LateGeometry.numeralRole(3, date17, step5k) != LateGeometry.MARK_NONE) {
+            logger.error("unused 3 should stay unmarked");
+            return false;
+        }
+        var date4 = LateGeometry.dateNumerals(4);
+        var step15 = LateGeometry.stepThousandsNumerals(15);
+        if (LateGeometry.numeralRole(4, date4, step15) != LateGeometry.MARK_DATE) {
+            logger.error("4th with 15k should keep 4 red");
+            return false;
+        }
+        if (LateGeometry.numeralRole(12, date4, step15) != LateGeometry.MARK_STEPS) {
+            logger.error("15k should mark 12 blue");
+            return false;
+        }
+        if (LateGeometry.numeralRole(3, date4, step15) != LateGeometry.MARK_STEPS) {
+            logger.error("15k should mark 3 blue");
+            return false;
+        }
+        return true;
+    }
+
+    (:test)
     function testGlyphOriginsOnPlate(logger as Test.Logger) as Boolean {
         if ((LateGeometry.dateGlyphX(5) != 256) || (LateGeometry.dateGlyphY(5) != 381)) {
             logger.error("date 5 crop origin drifted");

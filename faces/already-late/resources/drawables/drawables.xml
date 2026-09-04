@@ -3,36 +3,36 @@
     <bitmap id="Dial" filename="dial.png" dithering="none" packingFormat="png">
         <palette disableTransparency="true">
             <color>000000</color>
-            <color>401804</color>
-            <color>A05010</color>
-            <color>F08018</color>
+            <color>404040</color>
+            <color>A0A0A0</color>
+            <color>FFFFFF</color>
         </palette>
     </bitmap>
     <bitmap id="AodDial" filename="aod.png" dithering="none" packingFormat="png">
         <palette>
-            <color>F08018</color>
-            <color>A05010</color>
-            <color>401804</color>
+            <color>FFFFFF</color>
+            <color>A0A0A0</color>
+            <color>404040</color>
         </palette>
     </bitmap>
     <bitmap id="HourHand" filename="hour.png" dithering="none" packingFormat="png">
         <palette>
-            <color>F08018</color>
+            <color>FFFFFF</color>
         </palette>
     </bitmap>
     <bitmap id="MinuteHand" filename="minute.png" dithering="none" packingFormat="png">
         <palette disableTransparency="true">
-            <color>F08018</color>
+            <color>FFFFFF</color>
         </palette>
     </bitmap>
     <bitmap id="SecondHand" filename="second.png" dithering="none" packingFormat="png">
         <palette>
-            <color>F08018</color>
+            <color>FFFFFF</color>
         </palette>
     </bitmap>
     <bitmap id="Arbor" filename="arbor.png" dithering="none" packingFormat="png">
         <palette>
-            <color>F08018</color>
+            <color>FFFFFF</color>
         </palette>
     </bitmap>
     <bitmap id="Date1" filename="date1.png" dithering="none" packingFormat="png">
@@ -129,6 +129,198 @@
             <color>C03C40</color>
             <color>802830</color>
             <color>401418</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Step1" filename="step1.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>4A8CFF</color>
+            <color>3868C0</color>
+            <color>284480</color>
+            <color>142240</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Step2" filename="step2.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>4A8CFF</color>
+            <color>3868C0</color>
+            <color>284480</color>
+            <color>142240</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Step3" filename="step3.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>4A8CFF</color>
+            <color>3868C0</color>
+            <color>284480</color>
+            <color>142240</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Step4" filename="step4.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>4A8CFF</color>
+            <color>3868C0</color>
+            <color>284480</color>
+            <color>142240</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Step5" filename="step5.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>4A8CFF</color>
+            <color>3868C0</color>
+            <color>284480</color>
+            <color>142240</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Step6" filename="step6.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>4A8CFF</color>
+            <color>3868C0</color>
+            <color>284480</color>
+            <color>142240</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Step7" filename="step7.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>4A8CFF</color>
+            <color>3868C0</color>
+            <color>284480</color>
+            <color>142240</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Step8" filename="step8.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>4A8CFF</color>
+            <color>3868C0</color>
+            <color>284480</color>
+            <color>142240</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Step9" filename="step9.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>4A8CFF</color>
+            <color>3868C0</color>
+            <color>284480</color>
+            <color>142240</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Step10" filename="step10.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>4A8CFF</color>
+            <color>3868C0</color>
+            <color>284480</color>
+            <color>142240</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Step11" filename="step11.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>4A8CFF</color>
+            <color>3868C0</color>
+            <color>284480</color>
+            <color>142240</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Step12" filename="step12.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>4A8CFF</color>
+            <color>3868C0</color>
+            <color>284480</color>
+            <color>142240</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Both1" filename="both1.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>FFD400</color>
+            <color>C0A000</color>
+            <color>806800</color>
+            <color>403400</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Both2" filename="both2.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>FFD400</color>
+            <color>C0A000</color>
+            <color>806800</color>
+            <color>403400</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Both3" filename="both3.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>FFD400</color>
+            <color>C0A000</color>
+            <color>806800</color>
+            <color>403400</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Both4" filename="both4.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>FFD400</color>
+            <color>C0A000</color>
+            <color>806800</color>
+            <color>403400</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Both5" filename="both5.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>FFD400</color>
+            <color>C0A000</color>
+            <color>806800</color>
+            <color>403400</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Both6" filename="both6.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>FFD400</color>
+            <color>C0A000</color>
+            <color>806800</color>
+            <color>403400</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Both7" filename="both7.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>FFD400</color>
+            <color>C0A000</color>
+            <color>806800</color>
+            <color>403400</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Both8" filename="both8.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>FFD400</color>
+            <color>C0A000</color>
+            <color>806800</color>
+            <color>403400</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Both9" filename="both9.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>FFD400</color>
+            <color>C0A000</color>
+            <color>806800</color>
+            <color>403400</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Both10" filename="both10.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>FFD400</color>
+            <color>C0A000</color>
+            <color>806800</color>
+            <color>403400</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Both11" filename="both11.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>FFD400</color>
+            <color>C0A000</color>
+            <color>806800</color>
+            <color>403400</color>
+        </palette>
+    </bitmap>
+    <bitmap id="Both12" filename="both12.png" dithering="none" packingFormat="png">
+        <palette>
+            <color>FFD400</color>
+            <color>C0A000</color>
+            <color>806800</color>
+            <color>403400</color>
         </palette>
     </bitmap>
 </drawables>

@@ -71,27 +71,85 @@ module LateGeometry {
         return ((second / 60.0) * Math.PI * 2.0) as Float;
     }
 
+    const MARK_NONE = 0;
+    const MARK_DATE = 1;
+    const MARK_STEPS = 2;
+    const MARK_BOTH = 3;
+
     // Each of 1-12 is used at most once; 30 is 11+10+9 so 12+11+7 is never drawn.
     function dateNumerals(day as Number) as Array<Number> {
-        if (day < 1) {
+        return markNumerals(day);
+    }
+
+    function stepThousandsNumerals(thousands as Number) as Array<Number> {
+        return markNumerals(thousands);
+    }
+
+    function markNumerals(value as Number) as Array<Number> {
+        if (value < 1) {
             return [] as Array<Number>;
         }
-        if (day <= 12) {
-            return [day] as Array<Number>;
+        if (value > 78) {
+            value = 78;
         }
-        if (day <= 23) {
-            return [12, day - 12] as Array<Number>;
-        }
-        if (day == 30) {
+        if (value == 30) {
             return [11, 10, 9] as Array<Number>;
         }
-        if (day == 31) {
+        if (value <= 12) {
+            return [value] as Array<Number>;
+        }
+        if (value <= 23) {
+            return [12, value - 12] as Array<Number>;
+        }
+        if (value <= 29) {
+            return [12, 11, value - 23] as Array<Number>;
+        }
+        if (value == 31) {
             return [12, 11, 8] as Array<Number>;
         }
-        if (day > 31) {
-            return [] as Array<Number>;
+        var remaining = value;
+        var used = [false, false, false, false, false, false, false, false, false, false, false, false] as Array<Boolean>;
+        var count = 0;
+        for (var n = 12; n >= 1; n--) {
+            if (n <= remaining) {
+                used[n - 1] = true;
+                remaining -= n;
+                count++;
+            }
         }
-        return [12, 11, day - 23] as Array<Number>;
+        var out = new [count] as Array<Number>;
+        var i = 0;
+        for (var n = 12; n >= 1; n--) {
+            if (used[n - 1]) {
+                out[i] = n;
+                i++;
+            }
+        }
+        return out;
+    }
+
+    function containsNumeral(nums as Array<Number>, n as Number) as Boolean {
+        for (var i = 0; i < nums.size(); i++) {
+            if (nums[i] == n) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function numeralRole(n as Number, dateNums as Array<Number>, stepNums as Array<Number>) as Number {
+        var inDate = containsNumeral(dateNums, n);
+        var inSteps = containsNumeral(stepNums, n);
+        if (inDate && inSteps) {
+            return MARK_BOTH;
+        }
+        if (inDate) {
+            return MARK_DATE;
+        }
+        if (inSteps) {
+            return MARK_STEPS;
+        }
+        return MARK_NONE;
     }
 
     function dateGlyphX(numeral as Number) as Number {
