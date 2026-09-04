@@ -95,7 +95,7 @@ class LateFaceView extends WatchUi.WatchFace {
         return !_isAwake;
     }
 
-    // AOD plate has no hour marks so the red date glyphs are the only numerals.
+    // High power: numberless plate + red date. AOD: numbered plate, no date.
     private function drawFace(dc as Dc, drawSeconds as Boolean) as Void {
         var width = dc.getWidth();
         var height = dc.getHeight();
@@ -110,7 +110,7 @@ class LateFaceView extends WatchUi.WatchFace {
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
         dc.clear();
 
-        var dialBmp = drawSeconds ? _dial : _aodDial;
+        var dialBmp = drawSeconds ? _aodDial : _dial;
         if (dialBmp == null) {
             dialBmp = _dial;
         }
@@ -122,7 +122,9 @@ class LateFaceView extends WatchUi.WatchFace {
             );
         }
 
-        drawDate(dc, cx, cy);
+        if (drawSeconds) {
+            drawDate(dc, cx, cy);
+        }
 
         var hourBmp = _hourHand;
         if (hourBmp != null) {
