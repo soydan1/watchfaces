@@ -125,7 +125,7 @@ class LateFaceView extends WatchUi.WatchFace {
     }
 
     // High power: numberless plate + colored marks + seconds.
-    // AOD: numbered plate only (crown, slogan, hour marks). Never both plates.
+    // AOD: newbg.png (crown, slogan, hour marks) + hour/minute only.
     private function drawFace(dc as Dc, drawSeconds as Boolean) as Void {
         var width = dc.getWidth();
         var height = dc.getHeight();
@@ -140,7 +140,7 @@ class LateFaceView extends WatchUi.WatchFace {
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
         dc.clear();
 
-        // One plate only: numberless in high power, numbered bg in AOD.
+        // One plate only: numberless in high power, newbg in AOD.
         var dialBmp = drawSeconds ? _aodDial : _dial;
         if (dialBmp == null) {
             dialBmp = _dial;

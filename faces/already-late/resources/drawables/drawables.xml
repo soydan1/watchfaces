@@ -1,11 +1,10 @@
 <drawables xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://developer.garmin.com/downloads/connect-iq/resources.xsd">
     <bitmap id="LauncherIcon" filename="launcher_icon.svg" dithering="none" />
-    <bitmap id="Dial" filename="dial.png" dithering="none" packingFormat="png">
-        <palette disableTransparency="true">
-            <color>000000</color>
-            <color>404040</color>
-            <color>A0A0A0</color>
+    <bitmap id="Dial" filename="newbg.png" dithering="none" packingFormat="png">
+        <palette>
             <color>FFFFFF</color>
+            <color>A0A0A0</color>
+            <color>404040</color>
         </palette>
     </bitmap>
     <bitmap id="AodDial" filename="aod.png" dithering="none" packingFormat="png">
