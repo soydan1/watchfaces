@@ -22,6 +22,15 @@ module MemoryBudgetTest {
         var hour = LateGeometry.hourAngle(3, 30);
         var minute = LateGeometry.minuteAngle(30);
         var second = LateGeometry.secondAngle(15);
+        var faded = LateGeometry.fadeColor(0xFFFFFF, LateGeometry.WAKE_FADE_STEP);
+        if (faded != 0x333333) {
+            logger.error("fadeColor(white, 51) must be #333333");
+            return false;
+        }
+        if (LateGeometry.markColor(LateGeometry.MARK_STEPS) != LateGeometry.MARK_STEPS_COLOR) {
+            logger.error("step mark color drifted");
+            return false;
+        }
         var date30 = LateGeometry.dateNumerals(30);
         var step32 = LateGeometry.stepThousandsNumerals(32);
         if (date30.size() != 3) {

@@ -4,6 +4,7 @@ import Toybox.Lang;
 import Toybox.System;
 import Toybox.Time;
 import Toybox.Time.Gregorian;
+import Toybox.Timer;
 import Toybox.WatchUi;
 
 class LateFaceView extends WatchUi.WatchFace {
@@ -11,7 +12,6 @@ class LateFaceView extends WatchUi.WatchFace {
     private var _isAwake as Boolean;
     private var _partialUpdatesAllowed as Boolean;
     private var _dial as BitmapType?;
-    private var _aodDial as BitmapType?;
     private var _hourHand as BitmapType?;
     private var _minuteHand as BitmapType?;
     private var _secondHand as BitmapType?;
@@ -20,11 +20,15 @@ class LateFaceView extends WatchUi.WatchFace {
     private var _stepGlyphs as Array<BitmapType?>;
     private var _bothGlyphs as Array<BitmapType?>;
     private var _handXform as AffineTransform;
-    private var _handOpts as { :transform as AffineTransform, :filterMode as FilterMode };
+    private var _handOpts as { :transform as AffineTransform, :filterMode as FilterMode, :tintColor as Graphics.ColorType };
+    private var _glyphOpts as { :filterMode as FilterMode, :tintColor as Graphics.ColorType };
+    private var _wakeTimer as Timer.Timer?;
+    private var _wakeAlpha as Number;
 
     function initialize() {
         WatchFace.initialize();
         _isAwake = true;
+        _wakeAlpha = 255;
         _partialUpdatesAllowed = (WatchUi.WatchFace has :onPartialUpdate);
         _dateGlyphs = new [12] as Array<BitmapType?>;
         _stepGlyphs = new [12] as Array<BitmapType?>;
@@ -34,11 +38,13 @@ class LateFaceView extends WatchUi.WatchFace {
             :transform => _handXform,
             :filterMode => Graphics.FILTER_MODE_POINT
         };
+        _glyphOpts = {
+            :filterMode => Graphics.FILTER_MODE_POINT
+        };
     }
 
     function onLayout(dc as Dc) as Void {
         _dial = WatchUi.loadResource($.Rez.Drawables.Dial) as BitmapType;
-        _aodDial = WatchUi.loadResource($.Rez.Drawables.AodDial) as BitmapType;
         _hourHand = WatchUi.loadResource($.Rez.Drawables.HourHand) as BitmapType;
         _minuteHand = WatchUi.loadResource($.Rez.Drawables.MinuteHand) as BitmapType;
         _secondHand = WatchUi.loadResource($.Rez.Drawables.SecondHand) as BitmapType;
@@ -85,14 +91,28 @@ class LateFaceView extends WatchUi.WatchFace {
     }
 
     function onHide() as Void {
+        stopWakeFade();
     }
 
     function onExitSleep() as Void {
         _isAwake = true;
+        startWakeFade();
+        WatchUi.requestUpdate();
     }
 
     function onEnterSleep() as Void {
         _isAwake = false;
+        _wakeAlpha = 0;
+        stopWakeFade();
+    }
+
+    function onWakeFadeTick() as Void {
+        _wakeAlpha += LateGeometry.WAKE_FADE_STEP;
+        if (_wakeAlpha >= 255) {
+            _wakeAlpha = 255;
+            stopWakeFade();
+        }
+        WatchUi.requestUpdate();
     }
 
     function turnPartialUpdatesOff() as Void {
@@ -124,9 +144,9 @@ class LateFaceView extends WatchUi.WatchFace {
         return !_isAwake;
     }
 
-    // High power: numberless plate + colored marks + seconds.
-    // AOD: newbg.png (crown, slogan, hour marks) + hour/minute only.
-    private function drawFace(dc as Dc, drawSeconds as Boolean) as Void {
+    // Both modes blit newbg.png (crown, slogan, scattered hour marks).
+    // High power fades in date/step colorization and the seconds hand.
+    private function drawFace(dc as Dc, highPower as Boolean) as Void {
         var width = dc.getWidth();
         var height = dc.getHeight();
         var clockTime = System.getClockTime();
@@ -140,21 +160,18 @@ class LateFaceView extends WatchUi.WatchFace {
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
         dc.clear();
 
-        // One plate only: numberless in high power, newbg in AOD.
-        var dialBmp = drawSeconds ? _aodDial : _dial;
-        if (dialBmp == null) {
-            dialBmp = _dial;
-        }
-        if (dialBmp != null) {
+        if (_dial != null) {
             dc.drawBitmap(
                 cx - LateGeometry.DIAL_RADIUS,
                 cy - LateGeometry.DIAL_RADIUS,
-                dialBmp
+                _dial
             );
         }
 
-        if (drawSeconds) {
-            drawMarks(dc, cx, cy);
+        var fadeAlpha = highPower ? _wakeAlpha : 0;
+
+        if (fadeAlpha > 0) {
+            drawMarks(dc, cx, cy, fadeAlpha);
         }
 
         var hourBmp = _hourHand;
@@ -166,7 +183,8 @@ class LateFaceView extends WatchUi.WatchFace {
                 cy,
                 LateGeometry.hourAngle(clockTime.hour, clockTime.min),
                 LateGeometry.HOUR_PIVOT_X,
-                LateGeometry.HOUR_PIVOT_Y
+                LateGeometry.HOUR_PIVOT_Y,
+                255
             );
         }
         var minuteBmp = _minuteHand;
@@ -178,10 +196,11 @@ class LateFaceView extends WatchUi.WatchFace {
                 cy,
                 LateGeometry.minuteAngle(clockTime.min),
                 LateGeometry.MINUTE_PIVOT_X,
-                LateGeometry.MINUTE_PIVOT_Y
+                LateGeometry.MINUTE_PIVOT_Y,
+                255
             );
         }
-        if (drawSeconds) {
+        if (fadeAlpha > 0) {
             var secondBmp = _secondHand;
             if (secondBmp != null) {
                 drawHand(
@@ -191,7 +210,8 @@ class LateFaceView extends WatchUi.WatchFace {
                     cy,
                     LateGeometry.secondAngle(clockTime.sec),
                     LateGeometry.SECOND_PIVOT_X,
-                    LateGeometry.SECOND_PIVOT_Y
+                    LateGeometry.SECOND_PIVOT_Y,
+                    fadeAlpha
                 );
             }
         }
@@ -207,7 +227,7 @@ class LateFaceView extends WatchUi.WatchFace {
         }
     }
 
-    private function drawMarks(dc as Dc, cx as Number, cy as Number) as Void {
+    private function drawMarks(dc as Dc, cx as Number, cy as Number, alpha as Number) as Void {
         var info = Gregorian.info(Time.now(), Time.FORMAT_SHORT);
         var dateNums = LateGeometry.dateNumerals(info.day);
         var stepNums = LateGeometry.stepThousandsNumerals(stepThousands());
@@ -217,10 +237,13 @@ class LateFaceView extends WatchUi.WatchFace {
             var role = LateGeometry.numeralRole(n, dateNums, stepNums);
             var bmp = glyphForRole(role, n);
             if (bmp != null) {
-                dc.drawBitmap(
+                drawGlyph(
+                    dc,
+                    bmp,
                     left + LateGeometry.DATE_GLYPH_X[n - 1],
                     top + LateGeometry.DATE_GLYPH_Y[n - 1],
-                    bmp
+                    LateGeometry.markColor(role),
+                    alpha
                 );
             }
         }
@@ -255,12 +278,71 @@ class LateFaceView extends WatchUi.WatchFace {
         cy as Number,
         angle as Float,
         pivotX as Number,
-        pivotY as Number
+        pivotY as Number,
+        alpha as Number
     ) as Void {
         var t = _handXform;
         t.setToTranslation(cx.toFloat(), cy.toFloat());
         t.rotate(angle);
         t.translate(0 - pivotX.toFloat(), 0 - pivotY.toFloat());
+        applyTint(_handOpts, Graphics.COLOR_WHITE, alpha);
         dc.drawBitmap2(0, 0, bitmap, _handOpts);
+        clearTint(_handOpts);
+    }
+
+    private function drawGlyph(
+        dc as Dc,
+        bitmap as BitmapType,
+        x as Number,
+        y as Number,
+        color as Number,
+        alpha as Number
+    ) as Void {
+        if (alpha >= 255) {
+            dc.drawBitmap(x, y, bitmap);
+            return;
+        }
+        applyTint(_glyphOpts, color, alpha);
+        dc.drawBitmap2(x, y, bitmap, _glyphOpts);
+        clearTint(_glyphOpts);
+    }
+
+    private function applyTint(
+        opts as Dictionary,
+        color as Number,
+        alpha as Number
+    ) as Void {
+        if (alpha >= 255) {
+            if (opts.hasKey(:tintColor)) {
+                opts.remove(:tintColor);
+            }
+            return;
+        }
+        opts[:tintColor] = LateGeometry.fadeColor(color, alpha);
+    }
+
+    private function clearTint(opts as Dictionary) as Void {
+        if (opts.hasKey(:tintColor)) {
+            opts.remove(:tintColor);
+        }
+    }
+
+    private function startWakeFade() as Void {
+        _wakeAlpha = 0;
+        var timer = _wakeTimer;
+        if (timer == null) {
+            timer = new Timer.Timer();
+            _wakeTimer = timer;
+        } else {
+            timer.stop();
+        }
+        timer.start(method(:onWakeFadeTick), LateGeometry.WAKE_FADE_TICK_MS, true);
+    }
+
+    private function stopWakeFade() as Void {
+        var timer = _wakeTimer;
+        if (timer != null) {
+            timer.stop();
+        }
     }
 }

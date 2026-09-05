@@ -7,13 +7,6 @@
             <color>404040</color>
         </palette>
     </bitmap>
-    <bitmap id="AodDial" filename="aod.png" dithering="none" packingFormat="png">
-        <palette>
-            <color>FFFFFF</color>
-            <color>A0A0A0</color>
-            <color>404040</color>
-        </palette>
-    </bitmap>
     <bitmap id="HourHand" filename="hour.png" dithering="none" packingFormat="png">
         <palette>
             <color>FFFFFF</color>

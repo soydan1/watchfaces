@@ -5,9 +5,10 @@ You are working on a Garmin Connect IQ **watch face** in
 `/home/agent/projects/coach` or `/home/agent/projects/hermes-face`
 unless the user says so.
 
-The dial is a black/orange joke face: crown at 12, “Who cares I’m already
-late”, numerals scattered off the chapter ring. Same drawing for high
-power and always-on. AOD only drops the seconds hand.
+The dial is a white-on-black joke face: crown at 12, “Who cares I’m already
+late”, numerals scattered off the chapter ring. High power and always-on
+share `newbg.png`. AOD drops the seconds hand and date/step color marks.
+On wrist-up those two layers fade in (~250 ms). Do not bring orange back.
 
 ## Read first
 
@@ -21,9 +22,9 @@ power and always-on. AOD only drops the seconds hand.
 - This is `type="watchface"`. Heap is **128 KB**.
 - **Never** add the raw `reference/*.png` as drawables. Palettize first.
   A 454×454 16bpp buffer is ~403 KB.
-- High power and AOD share the black/orange drawing. Do not dim, invert,
-  or restyle for AOD.
-- AOD: no seconds hand; burn-in shift already in `drawFace`.
+- High power and AOD share the numbered white plate. Do not swap plates.
+- AOD: no seconds hand, no date/step overlays; burn-in shift already in `drawFace`.
+- Wake fade uses `drawBitmap2` `:tintColor` (this API has no bitmap `:alpha`).
 - Isolated git worktree / `agent/*` branches if you commit. Do not commit
   unless the user asks. Do not push to `main`.
 - Do not publish this as “Rolex” on the Connect IQ Store.

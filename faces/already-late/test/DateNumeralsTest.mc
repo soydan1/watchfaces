@@ -167,6 +167,35 @@ module DateNumeralsTest {
     }
 
     (:test)
+    function testFadeColorSteps(logger as Test.Logger) as Boolean {
+        if (LateGeometry.WAKE_FADE_STEP * 5 != 255) {
+            logger.error("five fade steps must reach 255");
+            return false;
+        }
+        if (LateGeometry.fadeColor(0xFFFFFF, 0) != 0) {
+            logger.error("fade 0 should be black");
+            return false;
+        }
+        if (LateGeometry.fadeColor(0xFF4F54, 255) != 0xFF4F54) {
+            logger.error("fade 255 should be identity");
+            return false;
+        }
+        if (LateGeometry.fadeColor(0xFFFFFF, 51) != 0x333333) {
+            logger.error("fade 51 of white should be #333333");
+            return false;
+        }
+        if (LateGeometry.markColor(LateGeometry.MARK_DATE) != LateGeometry.MARK_DATE_COLOR) {
+            logger.error("date mark color drifted");
+            return false;
+        }
+        if (LateGeometry.markColor(LateGeometry.MARK_BOTH) != LateGeometry.MARK_BOTH_COLOR) {
+            logger.error("overlap mark color drifted");
+            return false;
+        }
+        return true;
+    }
+
+    (:test)
     function testGlyphOriginsOnPlate(logger as Test.Logger) as Boolean {
         if ((LateGeometry.dateGlyphX(5) != 256) || (LateGeometry.dateGlyphY(5) != 381)) {
             logger.error("date 5 crop origin drifted");

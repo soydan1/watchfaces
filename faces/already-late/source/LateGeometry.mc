@@ -6,6 +6,13 @@ import Toybox.Math;
 module LateGeometry {
 
     const ORANGE = 0xF08018;
+    const MARK_DATE_COLOR = 0xFF4F54;
+    const MARK_STEPS_COLOR = 0x4A8CFF;
+    const MARK_BOTH_COLOR = 0xFFD400;
+
+    // Wrist-up fade: 5 ticks × 50 ms. drawBitmap2 has no :alpha on this API.
+    const WAKE_FADE_TICK_MS = 50;
+    const WAKE_FADE_STEP = 51;
 
     const HOUR_WIDTH = 18;
     const HOUR_HEIGHT = 158;
@@ -135,6 +142,29 @@ module LateGeometry {
             }
         }
         return false;
+    }
+
+    function markColor(role as Number) as Number {
+        if (role == MARK_STEPS) {
+            return MARK_STEPS_COLOR;
+        }
+        if (role == MARK_BOTH) {
+            return MARK_BOTH_COLOR;
+        }
+        return MARK_DATE_COLOR;
+    }
+
+    function fadeColor(color as Number, alpha as Number) as Number {
+        if (alpha >= 255) {
+            return color;
+        }
+        if (alpha <= 0) {
+            return 0;
+        }
+        var r = ((color >> 16) & 0xFF) * alpha / 255;
+        var g = ((color >> 8) & 0xFF) * alpha / 255;
+        var b = (color & 0xFF) * alpha / 255;
+        return (r << 16) | (g << 8) | b;
     }
 
     function numeralRole(n as Number, dateNums as Array<Number>, stepNums as Array<Number>) as Number {
