@@ -1,3 +1,4 @@
 <properties>
     <property id="DarkTheme" type="boolean">false</property>
+    <property id="Diagnostics" type="boolean">false</property>
 </properties>

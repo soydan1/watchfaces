@@ -10,17 +10,17 @@ class SpeedometerView extends WatchUi.WatchFace {
     private var _awake as Boolean = true;
     private var _dark as Boolean = false;
     private var _background as BitmapResource?;
-    private var _window as BitmapResource?;
     private var _needle as BitmapResource?;
     private var _redOne as BitmapResource?;
     private var _redTwo as BitmapResource?;
     private var _digits as Array<BitmapResource>;
     private var _xf as AffineTransform;
+    private var _maxDrawMs as Number = 0;
+    private var _maxObservedHeap as Number = 0;
 
     function initialize() {
         WatchFace.initialize();
         _background = null;
-        _window = null;
         _needle = null;
         _redOne = null;
         _redTwo = null;
@@ -48,9 +48,7 @@ class SpeedometerView extends WatchUi.WatchFace {
         _dark = dark;
         // Only retain one plate at a time. No full-screen offscreen buffers.
         _background = null;
-        _window = null;
         _background = WatchUi.loadResource(_dark ? Rez.Drawables.BackgroundDark : Rez.Drawables.Background) as BitmapResource;
-        _window = WatchUi.loadResource(_dark ? Rez.Drawables.WindowDark : Rez.Drawables.Window) as BitmapResource;
     }
 
     function onEnterSleep() as Void {
@@ -63,6 +61,8 @@ class SpeedometerView extends WatchUi.WatchFace {
     }
 
     function onUpdate(dc as Dc) as Void {
+        var diagnostics = Application.Properties.getValue("Diagnostics") == true;
+        var startedAt = diagnostics ? System.getTimer() : 0;
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
         dc.clear();
         var clock = System.getClockTime();
@@ -87,6 +87,13 @@ class SpeedometerView extends WatchUi.WatchFace {
         } else if (red == 2 && _redTwo != null) {
             dc.drawBitmap(87, 326, _redTwo);
         }
+        drawPair(dc, clock.min, 196, 108, 28, 44, 6);
+        var dateX = SpeedometerGeometry.dateStartX(date.day);
+        drawPair(dc, date.day, dateX, 326, 24, 42, 4);
+        drawPair(dc, date.month, dateX + 72, 326, 24, 42, 4);
+        dc.setColor(0xFF4020, Graphics.COLOR_TRANSPARENT);
+        dc.fillRectangle(dateX + 58, 346, 8, 4);
+        // Draw last: the needle must sit over the screen/bezel AND digits.
         if (_needle != null) {
             _xf.setToTranslation(SpeedometerGeometry.PIVOT_X.toFloat(), SpeedometerGeometry.PIVOT_Y.toFloat());
             _xf.rotate(SpeedometerGeometry.needleAngle(clock.hour));
@@ -96,16 +103,9 @@ class SpeedometerView extends WatchUi.WatchFace {
                 :filterMode => Graphics.FILTER_MODE_BILINEAR
             });
         }
-        // Screen/bezel sits in front of the needle at hours 6–8. Restore it
-        // before drawing minutes so the pointer cannot obscure the display.
-        if (_window != null) {
-            dc.drawBitmap(180, 81, _window);
+        if (diagnostics) {
+            logRenderStats(startedAt, lowPower);
         }
-        drawPair(dc, clock.min, 202, 117, 20, 29, 4);
-        drawPair(dc, date.day, 266, 336, 14, 21, 3);
-        drawPair(dc, date.month, 315, 336, 14, 21, 3);
-        dc.setColor(0xFF3010, Graphics.COLOR_TRANSPARENT);
-        dc.fillRectangle(305, 347, 6, 2);
     }
 
     private function drawPair(dc as Dc, value as Number, x as Number, y as Number,
@@ -116,12 +116,28 @@ class SpeedometerView extends WatchUi.WatchFace {
 
     private function drawDigit(dc as Dc, value as Number, x as Number, y as Number,
                                width as Number, height as Number) as Void {
+        // Minutes use native-size bitmaps: no resampling/transform required.
+        if (width == 28 && height == 44) {
+            dc.drawBitmap(x, y, _digits[value]);
+            return;
+        }
         _xf.setToTranslation(x.toFloat(), y.toFloat());
-        _xf.scale(width / 20.0f, height / 29.0f);
+        _xf.scale(width / 28.0f, height / 44.0f);
         dc.drawBitmap2(0, 0, _digits[value], {
             :transform => _xf,
             :filterMode => Graphics.FILTER_MODE_BILINEAR
         });
     }
 
+    private function logRenderStats(startedAt as Number, lowPower as Boolean) as Void {
+        var elapsed = System.getTimer() - startedAt;
+        var used = System.getSystemStats().usedMemory;
+        if (elapsed > _maxDrawMs) { _maxDrawMs = elapsed; }
+        if (used > _maxObservedHeap) { _maxObservedHeap = used; }
+        // Observed heap, not allocator peak; compare with simulator Memory view.
+        System.println("Speedometer mode=" + (lowPower ? "aod" : "active")
+            + " dark=" + (_dark ? "true" : "false") + " drawMs=" + elapsed + " maxDrawMs=" + _maxDrawMs
+            + " heap=" + used + " maxObservedHeap=" + _maxObservedHeap
+            + " free=" + System.getSystemStats().freeMemory);
+    }
 }

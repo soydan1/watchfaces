@@ -15,11 +15,20 @@ ID: existing installed faces are not replaced.
 - App setting **Dark dial** selects the alternate supplied background.
 
 The outer metal rim is removed with an inner-dial circular crop. Pixels outside
-the circle are flattened to black, so hidden rim RGB cannot leak through. The supplied needle is shortened
-and pivots about its hub, not the sprite centre. The top screen/bezel sits in
-front of the needle so minutes remain legible near hour 7. Red numeral patches
-preserve the existing scale. LED sprites use a clean dot sampled from digits.PNG
-and rebuild its digit patterns to eliminate scattered red artefacts.
+the circle are flattened to black, so hidden rim RGB cannot leak through.
+The supplied needle is shortened and pivots about its hub, not the sprite
+centre. It is drawn last, **above the bezel and digits**, so it can cover part
+of the minutes near hour 7. Red numeral patches preserve the existing scale.
+
+Digits are solid red-orange seven-segment sprites generated without a font
+dependency. Subtle top-left highlights and lower-right shadow edges give the
+segments a raised bevel; shading is baked into the PNGs, not extra runtime
+layers. All digits have equal visible height, including 1/4/7. Minutes are
+28×44 px; date digits are 24×42 px (twice the original 21 px date height), in a
+124 px-wide date band. The date is centred by its visible strokes at x=322,
+not its container: days 10–19 shift 8 px left to compensate for the narrow
+leading 1. Both active and AOD use this layout. `digits.PNG` remains
+in reference/ for provenance, but the dotted font is no longer used.
 
 ## Always-on
 
@@ -49,7 +58,7 @@ python3 tools/test_assets.py
 ```
 
 `bin/light-preview.png`, `bin/dark-preview.png`, `bin/aod-preview.png`,
-and `bin/hours-preview.png`
+`bin/needle-over-minutes-preview.png`, and `bin/hours-preview.png`
 are **static Pillow composition checks**, not simulator captures. The contact
 sheet shows 1–12 at minute 54 and date 10-08. Runtime date digits are scaled by
 the Garmin renderer; small rendering differences are possible.
@@ -70,6 +79,26 @@ monkeydo bin/Speedometer.prg d2mach2
 Signing must be performed by the owner; do not share the private key. Linux
 `monkeydo` can return 1 even if tests pass: inspect its textual summary.
 
+### Performance diagnostics
+
+Enable **Log render performance** in simulator App Settings. The next updates
+print `drawMs`, `maxDrawMs`, `heap`, `maxObservedHeap`, and `free`, together with
+active/AOD and theme state. Logging is off by default. Times measure the draw
+path (including a theme load when applicable), excluding the log formatting
+itself. Observed heap is not the allocator peak; also inspect the simulator's
+Memory view/profiler. Simulator timing is not a device battery-life estimate.
+
+Check cold start, steady active updates, AOD, and repeated sleep/wake/theme
+switches. Keep the app below its 128 KB heap limit, record peaks and update
+times, and watch for growth over several minutes. Disable logging afterwards.
+The test PRG also reports the time/heap delta for 4,800 angle lookups and checks
+retained resources against 128 KB. These measurements have not been run yet.
+
+Rendering changes avoid per-update angle-array allocations, draw minute glyphs
+at native size (only date glyphs and needle require transforms), reuse the same
+transform object, and no longer load/redraw a window patch over the needle.
+No full-screen offscreen buffer or seconds animation is introduced.
+
 ### Runtime acceptance checklist (not yet verified)
 
 - Build both app and tests; all tests pass with retained heap below 128 KB.
@@ -77,8 +106,8 @@ Signing must be performed by the owner; do not share the private key. Linux
 - Verify label 1/2 registration, no leftover highlight after hour 12, and needle
   direction at all hours on both themes.
 - Check date/month leading zeroes and date rollover, including month/year edges.
-- Change **Dark dial** through simulator App Settings; verify plate and window
-  switch together without memory errors.
+- Change **Dark dial** through simulator App Settings; verify the plate switches
+  without memory errors, and the needle stays over the minutes in both modes.
 - Check peak memory while actually drawing/rotating; the resource test alone
   does not prove the render path fits.
 - Enter low-power mode: verify the supplied dark artwork appears, record the
@@ -91,6 +120,9 @@ and select **Speedometer**. No device copy or deployment is automated here.
 ## Verification status
 
 Offline image/layout/XML checks are available in `tools/test_assets.py`.
-The owner reported the preceding version built successfully on macOS. This
-rim/AOD revision still needs compilation and simulator checks there; the coding
-agent has not accessed the owner's signing key.
+Ten offline asset/layout checks passed for the bevelled seven-segment,
+optically centred date, and foreground-needle revision. Compilation and runtime performance remain unverified for this
+revision. SDK 9.2.0, connectiq, monkeydo, and xvfb-run are installed on the coding
+host, but a signed updated PRG is required to run this face in the simulator.
+The coding agent has not accessed the owner's signing key. The owner can build
+locally and provide the app/test PRGs (not the key) for simulator checks.

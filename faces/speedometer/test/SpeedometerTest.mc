@@ -38,6 +38,17 @@ module SpeedometerTest {
     }
 
     (:test)
+    function testDateOpticalCenter(logger as Test.Logger) as Boolean {
+        for (var day = 1; day <= 31; day++) {
+            var expected = day >= 10 && day < 20 ? 252 : 260;
+            if (SpeedometerGeometry.dateStartX(day) != expected) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    (:test)
     function testAodUsesDarkArtwork(logger as Test.Logger) as Boolean {
         return SpeedometerGeometry.useDarkTheme(true, false) &&
                SpeedometerGeometry.useDarkTheme(true, true) &&
@@ -46,10 +57,29 @@ module SpeedometerTest {
     }
 
     (:test)
+    function testGeometryBenchmark(logger as Test.Logger) as Boolean {
+        var before = System.getSystemStats().usedMemory;
+        var startedAt = System.getTimer();
+        for (var round = 0; round < 100; round++) {
+            for (var hour = 0; hour < 24; hour++) {
+                if (SpeedometerGeometry.needleAngle(hour) !=
+                    SpeedometerGeometry.needleAngle(hour + 12)) {
+                    return false;
+                }
+            }
+        }
+        var elapsed = System.getTimer() - startedAt;
+        var used = System.getSystemStats().usedMemory;
+        logger.debug("Speedometer 4800 angle lookups ms=" + elapsed
+            + " heapDelta=" + (used - before));
+        return used < 131072;
+    }
+
+    (:test)
     function testResourcesAndHeap(logger as Test.Logger) as Boolean {
         // Match the view's retained resources, then exercise the actual draw
         // path in the simulator separately to catch decode/transform peaks.
-        var resources = [Rez.Drawables.Background, Rez.Drawables.Window,
+        var resources = [Rez.Drawables.Background,
             Rez.Drawables.Needle, Rez.Drawables.RedOne, Rez.Drawables.RedTwo,
             Rez.Drawables.Digit0, Rez.Drawables.Digit1, Rez.Drawables.Digit2,
             Rez.Drawables.Digit3, Rez.Drawables.Digit4, Rez.Drawables.Digit5,
@@ -65,7 +95,6 @@ module SpeedometerTest {
         // Also load the alternate plate without dropping the light one: a
         // conservative check of switching themes before garbage collection.
         loaded.add(WatchUi.loadResource(Rez.Drawables.BackgroundDark));
-        loaded.add(WatchUi.loadResource(Rez.Drawables.WindowDark));
         used = System.getSystemStats().usedMemory;
         logger.debug("Speedometer theme-switch heap=" + used);
         return used < 131072;

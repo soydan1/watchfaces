@@ -7,7 +7,7 @@ simulator screenshots. Source crop coordinates are in the original PNG pixels.
 from pathlib import Path
 import argparse
 import math
-from PIL import Image, ImageDraw
+from PIL import Image, ImageChops, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'resources/drawables'
@@ -28,32 +28,40 @@ def resize(im, size):
     return im.resize(size, Image.Resampling.LANCZOS)
 
 
-def clean_leds(im):
-    # Rebuild the regular LED lattice with sampled circles from the source.
-    # This retains its shaded dot style, discarding stray red background specks.
+def seven_segment_digits():
+    # Bevel-ended dashboard segments; all shading is baked into the PNGs.
+    # No extra runtime layers, installed font, dots, or outer glow.
+    segments = {
+        'a': [(5, 1), (23, 1), (26, 4), (23, 7), (5, 7), (2, 4)],
+        'g': [(5, 19), (23, 19), (26, 22), (23, 25), (5, 25), (2, 22)],
+        'd': [(5, 37), (23, 37), (26, 40), (23, 43), (5, 43), (2, 40)],
+        # Full-height vertical tips keep 1/4/7 optically as tall as 0/5/8.
+        'f': [(1, 5), (4, 1), (7, 5), (7, 17), (4, 21), (1, 17)],
+        'b': [(21, 5), (24, 1), (27, 5), (27, 17), (24, 21), (21, 17)],
+        'e': [(1, 27), (4, 23), (7, 27), (7, 39), (4, 43), (1, 39)],
+        'c': [(21, 27), (24, 23), (27, 27), (27, 39), (24, 43), (21, 39)],
+    }
+    patterns = ['abcdef', 'bc', 'abged', 'abgcd', 'fgbc',
+                'afgcd', 'afgecd', 'abc', 'abcdefg', 'abfgcd']
     glyphs = []
-    patterns = ['11111/10001/10001/10001/10001/10001/11111',
-                '00100/01100/00100/00100/00100/00100/11111',
-                '11111/00001/00001/11111/10000/10000/11111',
-                '11111/00001/00001/11111/00001/00001/11111',
-                '10001/10001/10001/11111/00001/00001/00001',
-                '11111/10000/10000/11111/00001/00001/11111',
-                '11111/10000/10000/11111/10001/10001/11111',
-                '11111/00001/00001/00001/00001/00001/00001',
-                '11111/10001/10001/11111/10001/10001/11111',
-                '11111/10001/10001/11111/00001/00001/11111']
-    # One clean dot, from the uppermost dot of the source '1'.
-    dot = im.crop((178, 40, 216, 78))
-    mask = Image.new('L', dot.size)
-    ImageDraw.Draw(mask).ellipse((1, 1, 36, 36), fill=255)
-    dot.putalpha(mask)
     for pattern in patterns:
-        glyph = Image.new('RGBA', (190, 270))
-        for row, line in enumerate(pattern.split('/')):
-            for col, bit in enumerate(line):
-                if bit == '1':
-                    glyph.alpha_composite(dot, (col * 38, row * 38))
-        glyphs.append(resize(glyph, (20, 29)))
+        mask = Image.new('L', (28 * 4, 44 * 4))
+        draw = ImageDraw.Draw(mask)
+        for segment in pattern:
+            draw.polygon([(x * 4, y * 4) for x, y in segments[segment]], fill=255)
+        # Inset top-left highlight and bottom-right shadow, both inside the
+        # original silhouette so digit heights and spacing remain unchanged.
+        highlight = ImageChops.subtract(mask, ImageChops.offset(mask, 3, 3))
+        shadow = ImageChops.subtract(mask, ImageChops.offset(mask, -3, -3))
+        glyph = Image.new('RGBA', mask.size, (255, 64, 32, 255))
+        glyph = Image.composite(Image.new('RGBA', mask.size, (190, 38, 12, 255)),
+                                glyph, shadow)
+        glyph = Image.composite(Image.new('RGBA', mask.size, (255, 150, 88, 255)),
+                                glyph, highlight)
+        glyph.putalpha(mask)
+        clean = Image.new('RGBA', mask.size)
+        clean.alpha_composite(glyph)
+        glyphs.append(resize(clean, (28, 44)))
     return glyphs
 
 
@@ -110,13 +118,24 @@ def prepare():
     hub.putalpha(hub_mask)
     needle.alpha_composite(hub)
     needle.save(OUT / 'needle.png')
-    glyphs = clean_leds(Image.open(REF / 'digits.PNG').convert('RGBA'))
+    glyphs = seven_segment_digits()
     for i, glyph in enumerate(glyphs):
         glyph.save(OUT / f'digit-{i}.png')
     return backgrounds, overlays, needle, glyphs
 
 
-def render(assets, hour, dark=False):
+def date_ink_bounds(glyphs):
+    return [resize(g, (24, 42)).getchannel('A').point(
+        lambda a: 255 if a > 128 else 0).getbbox() for g in glyphs]
+
+
+def date_start_x(glyphs, day, month):
+    bounds = date_ink_bounds(glyphs)
+    # First and last visible strokes, not the 124px monospaced container.
+    return 322 - (bounds[day // 10][0] + 100 + bounds[month % 10][2]) // 2
+
+
+def render(assets, hour, dark=False, minute=54, day=10, month=8, with_needle=True):
     backgrounds, overlays, needle, glyphs = assets
     canvas = backgrounds[int(dark)].copy()
     idx = hour if hour <= 10 else hour - 10
@@ -131,14 +150,17 @@ def render(assets, hour, dark=False):
     layer = Image.new('RGBA', (SIZE, SIZE))
     layer.alpha_composite(needle, (PIVOT[0] - 34, PIVOT[1] - 34))
     layer = layer.rotate(angle, Image.Resampling.BICUBIC, center=PIVOT)
-    canvas.alpha_composite(layer)
-    canvas.alpha_composite(backgrounds[int(dark)].crop((180, 81, 273, 185)), (180, 81))
-    for digit, xx in [(5, 202), (4, 226)]:
-        canvas.alpha_composite(glyphs[digit], (xx, 117))
-    # Date glyphs are resized for the lower window.
-    for digit, xx in [(1, 266), (0, 283), (0, 315), (8, 332)]:
-        canvas.alpha_composite(resize(glyphs[digit], (14, 21)), (xx, 336))
-    ImageDraw.Draw(canvas).line((305, 347, 310, 347), fill='#ff3010', width=2)
+    for digit, xx in [(minute // 10, 196), (minute % 10, 230)]:
+        canvas.alpha_composite(glyphs[digit], (xx, 108))
+    # Almost minute-size date digits, optically centred in the lower screen.
+    date_x = date_start_x(glyphs, day, month)
+    for digit, xx in [(day // 10, date_x), (day % 10, date_x + 28),
+                      (month // 10, date_x + 72), (month % 10, date_x + 100)]:
+        canvas.alpha_composite(resize(glyphs[digit], (24, 42)), (xx, 326))
+    ImageDraw.Draw(canvas).rectangle((date_x + 58, 346, date_x + 65, 349), fill='#ff4020')
+    # The needle is intentionally above the bezel AND digits, including AOD.
+    if with_needle:
+        canvas.alpha_composite(layer)
     return canvas
 
 
@@ -154,6 +176,7 @@ def preview(assets):
     render(assets, 11).save(dest / 'light-preview.png')
     render(assets, 12, dark=True).save(dest / 'dark-preview.png')
     render(assets, 12, dark=True).save(dest / 'aod-preview.png')
+    render(assets, 7).save(dest / 'needle-over-minutes-preview.png')
 
 
 if __name__ == '__main__':

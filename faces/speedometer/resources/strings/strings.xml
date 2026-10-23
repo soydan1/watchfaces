@@ -1,4 +1,5 @@
 <strings>
     <string id="AppName">Speedometer</string>
     <string id="DarkThemeTitle">Dark dial</string>
+    <string id="DiagnosticsTitle">Log render performance</string>
 </strings>
