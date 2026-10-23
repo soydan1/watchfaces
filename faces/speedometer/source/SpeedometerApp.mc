@@ -7,7 +7,7 @@ class SpeedometerApp extends Application.AppBase {
         AppBase.initialize();
     }
 
-    function getInitialView() as [Views] {
+    function getInitialView() as [Views] or [Views, InputDelegates] {
         return [new SpeedometerView()];
     }
 
