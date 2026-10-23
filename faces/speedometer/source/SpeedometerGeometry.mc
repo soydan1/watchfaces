@@ -24,15 +24,14 @@ module SpeedometerGeometry {
 
     function needleAngle(hour as Number) as Float {
         // Keep these aligned with tools/prepare_assets.py LABELS and PIVOT.
-        var angles = [0.2723732f, 0.7768275f, 1.2349509f, 1.6743483f,
-                      2.1124845f, 2.5948604f, 3.1415927f, -2.6330173f,
-                      -2.0928389f, -1.7060713f];
+        var angles = [0.2719006f, 0.7756082f, 1.2333894f, 1.6727458f,
+                      2.1110892f, 2.5940046f, -3.1415927f, -2.6322000f,
+                      -2.0914738f, -1.7043858f];
         return angles[labelForHour(hour) - 1];
     }
 
-    // Five non-overlapping time/date rows: avoid relying on a 1px shift of
-    // large filled glyphs for AMOLED protection. Validate with device heat map.
-    function aodY(minute as Number) as Number {
-        return 60 + (minute % 5) * 65;
+    // Sleep always uses the supplied dark plate; wake restores the preference.
+    function useDarkTheme(lowPower as Boolean, darkSetting as Boolean) as Boolean {
+        return lowPower || darkSetting;
     }
 }

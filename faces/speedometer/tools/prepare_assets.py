@@ -13,8 +13,9 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'resources/drawables'
 REF = ROOT / 'reference'
 SIZE = 454
-CROP = (70, 60, 1190, 1180)
-SCALE = SIZE / 1120
+# Stop inside the black dial boundary: no outer aluminium rim.
+CROP = (120, 110, 1140, 1130)
+SCALE = SIZE / (CROP[2] - CROP[0])
 PIVOT = (227, 230)
 # Original label centres; rotation follows this deliberately non-clock dial.
 LABELS = [(529, 989), (364, 898), (253, 759), (222, 585),
@@ -68,9 +69,14 @@ def prepare():
         mask = Image.new('L', (SIZE, SIZE))
         ImageDraw.Draw(mask).ellipse((0, 0, SIZE - 1, SIZE - 1), fill=255)
         bg.putalpha(mask)
+        # Discard hidden rim RGB outside the circle, rather than relying on
+        # PNG alpha handling in every viewer/resource decoder.
+        plate = Image.new('RGBA', (SIZE, SIZE), (0, 0, 0, 255))
+        plate.alpha_composite(bg)
+        bg = plate
         bg.save(OUT / dest)
         window_name = 'window-dark.png' if 'dark' in dest else 'window.png'
-        bg.crop((184, 94, 269, 189)).save(OUT / window_name)
+        bg.crop((180, 81, 273, 185)).save(OUT / window_name)
         backgrounds.append(bg)
     original = Image.open(REF / 'speedometer.PNG').convert('RGBA')
     for i, box in enumerate(LABEL_BOXES, 1):
@@ -118,21 +124,21 @@ def render(assets, hour, dark=False):
         label, xy = overlays[idx - 1]
         canvas.alpha_composite(label, xy)
     x, y = LABELS[idx - 1]
-    dx = (x - 70) * SCALE - PIVOT[0]
-    dy = (y - 60) * SCALE - PIVOT[1]
+    dx = (x - CROP[0]) * SCALE - PIVOT[0]
+    dy = (y - CROP[1]) * SCALE - PIVOT[1]
     # Pillow's positive rotation is counter-clockwise; align down to target.
     angle = math.degrees(math.atan2(dx, dy))
     layer = Image.new('RGBA', (SIZE, SIZE))
     layer.alpha_composite(needle, (PIVOT[0] - 34, PIVOT[1] - 34))
     layer = layer.rotate(angle, Image.Resampling.BICUBIC, center=PIVOT)
     canvas.alpha_composite(layer)
-    canvas.alpha_composite(backgrounds[int(dark)].crop((184, 94, 269, 189)), (184, 94))
-    for digit, xx in [(5, 204), (4, 228)]:
-        canvas.alpha_composite(glyphs[digit], (xx, 127))
+    canvas.alpha_composite(backgrounds[int(dark)].crop((180, 81, 273, 185)), (180, 81))
+    for digit, xx in [(5, 202), (4, 226)]:
+        canvas.alpha_composite(glyphs[digit], (xx, 117))
     # Date glyphs are resized for the lower window.
-    for digit, xx in [(1, 262), (0, 279), (0, 307), (8, 324)]:
-        canvas.alpha_composite(resize(glyphs[digit], (14, 21)), (xx, 326))
-    ImageDraw.Draw(canvas).line((298, 336, 303, 336), fill='#ff3010', width=2)
+    for digit, xx in [(1, 266), (0, 283), (0, 315), (8, 332)]:
+        canvas.alpha_composite(resize(glyphs[digit], (14, 21)), (xx, 336))
+    ImageDraw.Draw(canvas).line((305, 347, 310, 347), fill='#ff3010', width=2)
     return canvas
 
 
@@ -147,6 +153,7 @@ def preview(assets):
     sheet.save(dest / 'hours-preview.png')
     render(assets, 11).save(dest / 'light-preview.png')
     render(assets, 12, dark=True).save(dest / 'dark-preview.png')
+    render(assets, 12, dark=True).save(dest / 'aod-preview.png')
 
 
 if __name__ == '__main__':

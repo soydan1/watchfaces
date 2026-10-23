@@ -38,16 +38,11 @@ module SpeedometerTest {
     }
 
     (:test)
-    function testAodPositions(logger as Test.Logger) as Boolean {
-        for (var minute = 0; minute < 60; minute++) {
-            var y = SpeedometerGeometry.aodY(minute);
-            if (y < 60 || y > 320) { return false; }
-            // A time/date group must leave this row for at least 3 minutes.
-            for (var offset = 1; offset <= 3; offset++) {
-                if (SpeedometerGeometry.aodY(minute + offset) == y) { return false; }
-            }
-        }
-        return true;
+    function testAodUsesDarkArtwork(logger as Test.Logger) as Boolean {
+        return SpeedometerGeometry.useDarkTheme(true, false) &&
+               SpeedometerGeometry.useDarkTheme(true, true) &&
+               !SpeedometerGeometry.useDarkTheme(false, false) &&
+               SpeedometerGeometry.useDarkTheme(false, true);
     }
 
     (:test)

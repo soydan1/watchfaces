@@ -14,7 +14,8 @@ ID: existing installed faces are not replaced.
 - Bottom-right window: local day–month (`DD-MM`, e.g. `10-08`).
 - App setting **Dark dial** selects the alternate supplied background.
 
-The metal rim is cropped to a narrow border. The supplied needle is shortened
+The outer metal rim is removed with an inner-dial circular crop. Pixels outside
+the circle are flattened to black, so hidden rim RGB cannot leak through. The supplied needle is shortened
 and pivots about its hub, not the sprite centre. The top screen/bezel sits in
 front of the needle so minutes remain legible near hour 7. Red numeral patches
 preserve the existing scale. LED sprites use a clean dot sampled from digits.PNG
@@ -22,11 +23,18 @@ and rebuild its digit patterns to eliminate scattered red artefacts.
 
 ## Always-on
 
-A deliberately simpler black display with dim digital 12-hour time and date,
-not the full dark photograph. The group cycles through five separated vertical
-positions every minute. Heat-map/pixel coverage, font spacing, and burn-in
-behaviour still need simulator/device verification; do not assume compliance
-from the image or positioning code alone.
+Sleep mode uses the supplied **dark-speedometer.png**, with the same hour
+needle, red 11/12 highlights, minute digits, and date as the active face. Wake
+restores the selected active theme. The dark plate is not further dimmed or
+pixel-shifted: this is intentionally a baseline for the owner's burn-in test,
+not a claim of AMOLED compliance. Static numerals, bezels, and the bright hub
+may exceed Garmin's pixel-coverage or burn-in limits. Test in the simulator
+before considering daily always-on use.
+
+In the simulator, enable low-power/sleep mode and open **File → View Screen
+Heat Map**. Watch it across several minutes, including an hour boundary; also
+check that wake restores the yellow dial when Dark dial is disabled. Share the
+heat-map result and any device warnings before adding mitigation.
 
 ## Assets and offline checks
 
@@ -40,7 +48,8 @@ python3 tools/prepare_assets.py --preview
 python3 tools/test_assets.py
 ```
 
-`bin/light-preview.png`, `bin/dark-preview.png`, and `bin/hours-preview.png`
+`bin/light-preview.png`, `bin/dark-preview.png`, `bin/aod-preview.png`,
+and `bin/hours-preview.png`
 are **static Pillow composition checks**, not simulator captures. The contact
 sheet shows 1–12 at minute 54 and date 10-08. Runtime date digits are scaled by
 the Garmin renderer; small rendering differences are possible.
@@ -72,8 +81,9 @@ Signing must be performed by the owner; do not share the private key. Linux
   switch together without memory errors.
 - Check peak memory while actually drawing/rotating; the resource test alone
   does not prove the render path fits.
-- Enter low-power mode: check time/date do not overlap, screen heat map remains
-  within AMOLED limits, and wake restores the coloured dial.
+- Enter low-power mode: verify the supplied dark artwork appears, record the
+  screen heat map/AMOLED warnings, and verify wake restores the selected theme.
+  Full-artwork AOD compliance is not established.
 
 After verification, manually sideload `bin/Speedometer.prg` to `GARMIN/APPS/`
 and select **Speedometer**. No device copy or deployment is automated here.
@@ -81,5 +91,6 @@ and select **Speedometer**. No device copy or deployment is automated here.
 ## Verification status
 
 Offline image/layout/XML checks are available in `tools/test_assets.py`.
-Compilation and simulator checks are pending: `monkeyc` refuses an unsigned
-build, and the coding agent has not accessed the owner's signing key.
+The owner reported the preceding version built successfully on macOS. This
+rim/AOD revision still needs compilation and simulator checks there; the coding
+agent has not accessed the owner's signing key.

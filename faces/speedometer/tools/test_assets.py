@@ -26,7 +26,7 @@ class AssetTests(unittest.TestCase):
     def test_dimensions_and_round_crop(self):
         for background in self.assets[0]:
             self.assertEqual(background.size, (454, 454))
-            self.assertEqual(background.getpixel((0, 0))[3], 0)
+            self.assertEqual(background.getpixel((0, 0)), (0, 0, 0, 255))
             self.assertEqual(background.getpixel(art.PIVOT)[3], 255)
         self.assertEqual(self.assets[2].size, (68, 160))
         for digit in self.assets[3]:
@@ -38,7 +38,7 @@ class AssetTests(unittest.TestCase):
         for background, filename in zip(self.assets[0], ['window.png', 'window-dark.png']):
             patch = Image.open(art.OUT / filename).convert('RGBA')
             self.assertIsNone(ImageChops.difference(
-                patch, background.crop((184, 94, 269, 189))).getbbox())
+                patch, background.crop((180, 81, 273, 185))).getbbox())
 
     def test_artwork_angles_match_monkeyc_constants(self):
         source = (art.ROOT / 'source/SpeedometerGeometry.mc').read_text()
@@ -53,7 +53,7 @@ class AssetTests(unittest.TestCase):
             self.assertAlmostEqual(delta, 0, places=6)
 
     def test_red_overlay_registration(self):
-        expected = [(173, 355), (100, 317)]
+        expected = [(168, 368), (87, 326)]
         for (overlay, xy), position in zip(self.assets[1], expected):
             self.assertEqual(xy, position)
             self.assertTrue(any(overlay.getpixel((x, y))[0] > 200
@@ -71,8 +71,8 @@ class AssetTests(unittest.TestCase):
                 # needle rotation must never obscure its bezel or digits.
                 baseline = art.render(self.assets, 1, dark)
                 self.assertIsNone(ImageChops.difference(
-                    im.crop((184, 94, 269, 189)),
-                    baseline.crop((184, 94, 269, 189))).getbbox())
+                    im.crop((180, 81, 273, 185)),
+                    baseline.crop((180, 81, 273, 185))).getbbox())
 
     def test_manifest_is_separate_d2mach2_app(self):
         ns = {'iq': 'http://www.garmin.com/xml/connectiq'}

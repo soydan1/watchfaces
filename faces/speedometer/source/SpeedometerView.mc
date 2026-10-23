@@ -41,11 +41,11 @@ class SpeedometerView extends WatchUi.WatchFace {
         for (var i = 0; i < ids.size(); i++) {
             _digits.add(WatchUi.loadResource(ids[i]) as BitmapResource);
         }
-        loadTheme();
+        loadTheme(Application.Properties.getValue("DarkTheme") == true);
     }
 
-    private function loadTheme() as Void {
-        _dark = Application.Properties.getValue("DarkTheme") == true;
+    private function loadTheme(dark as Boolean) as Void {
+        _dark = dark;
         // Only retain one plate at a time. No full-screen offscreen buffers.
         _background = null;
         _window = null;
@@ -71,21 +71,21 @@ class SpeedometerView extends WatchUi.WatchFace {
         if (System has :getDisplayMode) {
             lowPower = lowPower || System.getDisplayMode() == System.DISPLAY_MODE_LOW_POWER;
         }
-        if (lowPower) {
-            drawAlwaysOn(dc, clock.hour, clock.min, date.day, date.month);
-            return;
-        }
-        if (_dark != (Application.Properties.getValue("DarkTheme") == true)) {
-            loadTheme();
+        // Use the supplied dark artwork for AOD, without dimming or replacing
+        // it, so its actual burn-in/coverage can be evaluated in the simulator.
+        var dark = SpeedometerGeometry.useDarkTheme(lowPower,
+            Application.Properties.getValue("DarkTheme") == true);
+        if (_dark != dark) {
+            loadTheme(dark);
         }
         if (_background != null) {
             dc.drawBitmap(0, 0, _background);
         }
         var red = SpeedometerGeometry.redLabel(clock.hour);
         if (red == 1 && _redOne != null) {
-            dc.drawBitmap(173, 355, _redOne);
+            dc.drawBitmap(168, 368, _redOne);
         } else if (red == 2 && _redTwo != null) {
-            dc.drawBitmap(100, 317, _redTwo);
+            dc.drawBitmap(87, 326, _redTwo);
         }
         if (_needle != null) {
             _xf.setToTranslation(SpeedometerGeometry.PIVOT_X.toFloat(), SpeedometerGeometry.PIVOT_Y.toFloat());
@@ -99,13 +99,13 @@ class SpeedometerView extends WatchUi.WatchFace {
         // Screen/bezel sits in front of the needle at hours 6–8. Restore it
         // before drawing minutes so the pointer cannot obscure the display.
         if (_window != null) {
-            dc.drawBitmap(184, 94, _window);
+            dc.drawBitmap(180, 81, _window);
         }
-        drawPair(dc, clock.min, 204, 127, 20, 29, 4);
-        drawPair(dc, date.day, 262, 326, 14, 21, 3);
-        drawPair(dc, date.month, 307, 326, 14, 21, 3);
+        drawPair(dc, clock.min, 202, 117, 20, 29, 4);
+        drawPair(dc, date.day, 266, 336, 14, 21, 3);
+        drawPair(dc, date.month, 315, 336, 14, 21, 3);
         dc.setColor(0xFF3010, Graphics.COLOR_TRANSPARENT);
-        dc.fillRectangle(298, 336, 6, 2);
+        dc.fillRectangle(305, 347, 6, 2);
     }
 
     private function drawPair(dc as Dc, value as Number, x as Number, y as Number,
@@ -124,13 +124,4 @@ class SpeedometerView extends WatchUi.WatchFace {
         });
     }
 
-    private function drawAlwaysOn(dc as Dc, hour as Number, minute as Number,
-                                 day as Number, month as Number) as Void {
-        var y = SpeedometerGeometry.aodY(minute);
-        var text = SpeedometerGeometry.dialHour(hour).format("%02d") + ":" + minute.format("%02d");
-        dc.setColor(0x888888, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(227, y, Graphics.FONT_SMALL, text, Graphics.TEXT_JUSTIFY_CENTER);
-        var date = day.format("%02d") + "-" + month.format("%02d");
-        dc.drawText(227, y + 32, Graphics.FONT_XTINY, date, Graphics.TEXT_JUSTIFY_CENTER);
-    }
 }
