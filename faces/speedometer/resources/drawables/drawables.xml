@@ -1,0 +1,20 @@
+<drawables>
+    <bitmap id="LauncherIcon" filename="launcher_icon.svg" dithering="none" />
+    <bitmap id="Background" filename="background.png" packingFormat="png" dithering="none" />
+    <bitmap id="BackgroundDark" filename="background-dark.png" packingFormat="png" dithering="none" />
+    <bitmap id="Window" filename="window.png" packingFormat="png" dithering="none" />
+    <bitmap id="WindowDark" filename="window-dark.png" packingFormat="png" dithering="none" />
+    <bitmap id="Needle" filename="needle.png" packingFormat="png" dithering="none" />
+    <bitmap id="RedOne" filename="red-1.png" packingFormat="png" dithering="none" />
+    <bitmap id="RedTwo" filename="red-2.png" packingFormat="png" dithering="none" />
+    <bitmap id="Digit0" filename="digit-0.png" packingFormat="png" dithering="none" />
+    <bitmap id="Digit1" filename="digit-1.png" packingFormat="png" dithering="none" />
+    <bitmap id="Digit2" filename="digit-2.png" packingFormat="png" dithering="none" />
+    <bitmap id="Digit3" filename="digit-3.png" packingFormat="png" dithering="none" />
+    <bitmap id="Digit4" filename="digit-4.png" packingFormat="png" dithering="none" />
+    <bitmap id="Digit5" filename="digit-5.png" packingFormat="png" dithering="none" />
+    <bitmap id="Digit6" filename="digit-6.png" packingFormat="png" dithering="none" />
+    <bitmap id="Digit7" filename="digit-7.png" packingFormat="png" dithering="none" />
+    <bitmap id="Digit8" filename="digit-8.png" packingFormat="png" dithering="none" />
+    <bitmap id="Digit9" filename="digit-9.png" packingFormat="png" dithering="none" />
+</drawables>
