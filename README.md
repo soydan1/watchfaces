@@ -69,4 +69,4 @@ monkeydo bin/SlimDial.prg d2mach2
 | Dir | App name | Notes |
 |---|---|---|
 | `faces/slim-dial` | Slim Dial | Stroke-drawn analog, AOD outline 12/3/9 |
-| `faces/speedometer` | Speedometer | Stepped hour gauge; red 1/2 for 11/12, digital minutes and date; [details](faces/speedometer/README.md) |
+| `faces/speedometer` | Speedometer | Digital time + date gauge; original hour-gauge variation available in settings; [details](faces/speedometer/README.md) |

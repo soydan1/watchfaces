@@ -44,6 +44,32 @@ module SpeedometerGeometry {
         return _angles[labelForHour(hour) - 1];
     }
 
+    // Date gauge: the upper window supplies tens, the image needle supplies
+    // ones. 10/20/30 point to the printed 0, never the printed 10.
+    const DATE_ZERO_ANGLE = 0.0130452f;
+
+    function dateTens(day as Number) as Number {
+        return (day / 10).toNumber();
+    }
+
+    function dateOnes(day as Number) as Number {
+        return day % 10;
+    }
+
+    function dateNeedleAngle(day as Number) as Float {
+        var ones = dateOnes(day);
+        return ones == 0 ? DATE_ZERO_ANGLE : _angles[ones - 1];
+    }
+
+    function displayHour(hour as Number, is24Hour as Boolean) as Number {
+        return is24Hour ? hour : dialHour(hour);
+    }
+
+    function timeStartX(hour as Number, is24Hour as Boolean) as Number {
+        // Same 24px glyph widths as the legacy date; only the height changes.
+        return dateStartX(displayHour(hour, is24Hour));
+    }
+
     // Sleep always uses the supplied dark plate; wake restores the preference.
     function useDarkTheme(lowPower as Boolean, darkSetting as Boolean) as Boolean {
         return lowPower || darkSetting;

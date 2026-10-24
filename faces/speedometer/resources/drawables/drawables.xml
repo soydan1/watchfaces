@@ -17,4 +17,8 @@
     <bitmap id="Digit7" filename="digit-7.png" packingFormat="png" dithering="none" />
     <bitmap id="Digit8" filename="digit-8.png" packingFormat="png" dithering="none" />
     <bitmap id="Digit9" filename="digit-9.png" packingFormat="png" dithering="none" />
+    <bitmap id="DateTens0" filename="date-tens-0.png" packingFormat="png" dithering="none" />
+    <bitmap id="DateTens1" filename="date-tens-1.png" packingFormat="png" dithering="none" />
+    <bitmap id="DateTens2" filename="date-tens-2.png" packingFormat="png" dithering="none" />
+    <bitmap id="DateTens3" filename="date-tens-3.png" packingFormat="png" dithering="none" />
 </drawables>

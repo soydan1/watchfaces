@@ -1,4 +1,7 @@
 <settings>
+    <setting propertyKey="@Properties.DateGauge" title="@Strings.DateGaugeTitle">
+        <settingConfig type="boolean" />
+    </setting>
     <setting propertyKey="@Properties.DarkTheme" title="@Strings.DarkThemeTitle">
         <settingConfig type="boolean" />
     </setting>

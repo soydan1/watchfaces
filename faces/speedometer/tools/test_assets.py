@@ -75,8 +75,8 @@ class AssetTests(unittest.TestCase):
                 baseline.crop((196, 108, 258, 152))).convert('RGB').getbbox())
         source = (art.ROOT / 'source/SpeedometerView.mc').read_text()
         needle = source.index('if (_needle != null)')
-        self.assertLess(source.index('drawPair(dc, clock.min'), needle)
-        self.assertLess(source.index('drawPair(dc, date.month'), needle)
+        self.assertLess(source.index('drawDateGauge(dc, clock.hour'), needle)
+        self.assertLess(source.index('drawLegacyLayout(dc, clock.hour'), needle)
         self.assertNotIn('dc.drawBitmap(180, 81', source)
 
     def test_solid_segments_and_larger_layout(self):
@@ -122,6 +122,73 @@ class AssetTests(unittest.TestCase):
                 left = x + bounds[day // 10][0]
                 right = x + 100 + bounds[month % 10][2]
                 self.assertLessEqual(abs((left + right) / 2 - constants['DATE_CENTER_X']), 0.5)
+
+    def test_date_tens_are_extracted_from_the_dial(self):
+        glyphs = art.dial_date_digits()
+        self.assertEqual(len(glyphs), 4)
+        for glyph in glyphs:
+            self.assertEqual(glyph.height, 58)
+            self.assertIsNotNone(glyph.getbbox())
+            x = 227 - glyph.width // 2
+            self.assertGreaterEqual(x, 193)
+            self.assertLessEqual(x + glyph.width, 261)
+        self.assertEqual(len({g.tobytes() for g in glyphs}), 4)
+
+    def test_zero_date_angle_points_to_printed_zero(self):
+        source = (art.ROOT / 'source/SpeedometerGeometry.mc').read_text()
+        actual = float(re.search(r'const DATE_ZERO_ANGLE = ([\d.]+)f;', source).group(1))
+        x, y = art.DATE_ZERO_LABEL
+        dx = (x - art.CROP[0]) * art.SCALE - art.PIVOT[0]
+        dy = (y - art.CROP[1]) * art.SCALE - art.PIVOT[1]
+        self.assertAlmostEqual(actual, math.atan2(-dx, dy), places=6)
+
+    def test_every_date_on_both_themes(self):
+        for dark in [False, True]:
+            baseline = art.render(self.assets, 13, day=1, dark=dark, date_gauge=True)
+            for day in range(1, 32):
+                image = art.render(self.assets, 13, day=day, dark=dark, date_gauge=True)
+                self.assertEqual(image.size, (454, 454))
+                # Date changes must not alter the digital time or its alignment.
+                self.assertIsNone(ImageChops.difference(
+                    image.crop((250, 300, 390, 400)),
+                    baseline.crop((250, 300, 390, 400))).convert('RGB').getbbox())
+                # No legacy red 1/2 hour highlights in date-gauge mode.
+                for box in [(168, 368, 195, 413), (87, 326, 131, 373)]:
+                    clean = art.render(self.assets, 13, day=day, dark=dark,
+                                       date_gauge=True, with_needle=False)
+                    self.assertIsNone(ImageChops.difference(
+                        clean.crop(box), self.assets[0][int(dark)].crop(box)
+                    ).convert('RGB').getbbox())
+        properties = ET.parse(art.ROOT / 'resources/settings/properties.xml').getroot()
+        self.assertEqual(properties.find("property[@id='DateGauge']").text, 'true')
+
+    def test_digital_time_is_centered_in_12_and_24_hour_modes(self):
+        bounds = [art.resize(g, (24, 48)).getchannel('A').point(
+            lambda a: 255 if a > 128 else 0).getbbox() for g in self.assets[3]]
+        for is24 in [False, True]:
+            for hour in range(24):
+                display = art.time_display_hour(hour, is24)
+                self.assertEqual(display, hour if is24 else (hour % 12 or 12))
+                x = art.time_start_x(self.assets[3], hour, is24)
+                self.assertEqual(x, 252 if 10 <= display < 20 else 260)
+                for minute in [0, 1, 9, 10, 59]:
+                    left = x + bounds[display // 10][0]
+                    right = x + 100 + bounds[minute % 10][2]
+                    self.assertLessEqual(abs((left + right) / 2 - 322), 0.5)
+                    self.assertGreaterEqual(left, 257)
+                    self.assertLessEqual(right, 389)
+
+    def test_aod_screening_metrics_on_known_colors(self):
+        from check_aod import metrics, screen_mask
+        mask = screen_mask()
+        for color, expected in [('black', 0), ('white', 100), ('red', 21.26)]:
+            result = metrics(Image.new('RGB', (454, 454), color), mask)
+            self.assertAlmostEqual(result['encoded_rgb_luma_percent_estimate'], expected)
+            self.assertAlmostEqual(result['linear_srgb_luminance_percent_estimate'], expected)
+            self.assertEqual(result['nonblack_pixels_percent'], 0 if color == 'black' else 100)
+        gray = metrics(Image.new('RGB', (454, 454), (128, 128, 128)), mask)
+        self.assertAlmostEqual(gray['encoded_rgb_luma_percent_estimate'], 128 / 255 * 100)
+        self.assertAlmostEqual(gray['linear_srgb_luminance_percent_estimate'], 21.586050011389926)
 
     def test_manifest_is_separate_d2mach2_app(self):
         ns = {'iq': 'http://www.garmin.com/xml/connectiq'}

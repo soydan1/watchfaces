@@ -28,6 +28,46 @@ module SpeedometerTest {
     }
 
     (:test)
+    function testEveryDate(logger as Test.Logger) as Boolean {
+        for (var day = 1; day <= 31; day++) {
+            var tens = SpeedometerGeometry.dateTens(day);
+            var ones = SpeedometerGeometry.dateOnes(day);
+            if (tens < 0 || tens > 3 || ones < 0 || ones > 9 ||
+                tens * 10 + ones != day) {
+                return false;
+            }
+            var expected = ones == 0 ? SpeedometerGeometry.DATE_ZERO_ANGLE
+                                     : SpeedometerGeometry.needleAngle(ones);
+            if (SpeedometerGeometry.dateNeedleAngle(day) != expected) {
+                return false;
+            }
+        }
+        return SpeedometerGeometry.dateNeedleAngle(10) == SpeedometerGeometry.dateNeedleAngle(20)
+            && SpeedometerGeometry.dateNeedleAngle(20) == SpeedometerGeometry.dateNeedleAngle(30)
+            && SpeedometerGeometry.dateNeedleAngle(10) != SpeedometerGeometry.needleAngle(10)
+            && SpeedometerGeometry.dateNeedleAngle(31) == SpeedometerGeometry.needleAngle(1);
+    }
+
+    (:test)
+    function testDigitalHours(logger as Test.Logger) as Boolean {
+        for (var hour = 0; hour < 24; hour++) {
+            var expected12 = hour % 12;
+            if (expected12 == 0) { expected12 = 12; }
+            if (SpeedometerGeometry.displayHour(hour, true) != hour ||
+                SpeedometerGeometry.displayHour(hour, false) != expected12) {
+                return false;
+            }
+            var expected24X = hour >= 10 && hour < 20 ? 252 : 260;
+            var expected12X = expected12 >= 10 ? 252 : 260;
+            if (SpeedometerGeometry.timeStartX(hour, true) != expected24X ||
+                SpeedometerGeometry.timeStartX(hour, false) != expected12X) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    (:test)
     function testNeedleDirections(logger as Test.Logger) as Boolean {
         // 1/2 point down-left; 7 points up; 10 points right and slightly up.
         var one = SpeedometerGeometry.needleAngle(1);
@@ -84,7 +124,8 @@ module SpeedometerTest {
             Rez.Drawables.Digit0, Rez.Drawables.Digit1, Rez.Drawables.Digit2,
             Rez.Drawables.Digit3, Rez.Drawables.Digit4, Rez.Drawables.Digit5,
             Rez.Drawables.Digit6, Rez.Drawables.Digit7, Rez.Drawables.Digit8,
-            Rez.Drawables.Digit9];
+            Rez.Drawables.Digit9, Rez.Drawables.DateTens0, Rez.Drawables.DateTens1,
+            Rez.Drawables.DateTens2, Rez.Drawables.DateTens3];
         var loaded = [];
         for (var i = 0; i < resources.size(); i++) {
             loaded.add(WatchUi.loadResource(resources[i]));

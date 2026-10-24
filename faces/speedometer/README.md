@@ -3,37 +3,53 @@
 Personal-use Connect IQ watch face, 454×454, API 5.2+. Independent application
 ID: existing installed faces are not replaced.
 
-## Reading the dial
+## Reading the dial — date gauge (default)
 
-- Hours 1–10: needle points to the original printed number.
-- Hour 11: needle points to **1**, and **1 turns red**.
-- Hour 12 (including midnight): needle points to **2**, and **2 turns red**.
-- At 13:00/01:00 the needle returns to the normal 1; the highlight clears.
-- Needle steps once per hour. It does not interpolate with minutes.
-- Top window: minutes, always two digits (`00`–`59`).
-- Bottom-right window: local day–month (`DD-MM`, e.g. `10-08`).
-- App setting **Dark dial** selects the alternate supplied background.
+The original **needle image is retained**. The date gauge layout is selected by
+app setting **Date gauge layout**, enabled by default.
+
+- Bottom-right window: large, optically centred digital `HH:MM`, following the
+  device's 12/24-hour preference. The colon is steady; no seconds or animation.
+  Hours always have two digits; 12-hour mode has no separate AM/PM indicator.
+- Top window: date tens digit, using the supplied dial's own 0/1/2/3 shapes.
+- Needle: date ones digit, pointing to the printed 0–9. The printed 10 is unused.
+- Date 05: top **0**, needle at **5**. Date 15: top **1**, needle at **5**.
+- Dates 10/20/30: top **1/2/3**, needle at the bottom **0**, not the printed 10.
+- Date 31: top **3**, needle at **1**. Day 01 restores top **0**, needle at **1**.
+- No red 1/2 hour highlight in this mode. The month is not displayed.
+- **Dark dial** selects the active background; AOD always uses the dark artwork.
+
+### Original hour-gauge variation
+
+Disable **Date gauge layout** to restore the preceding design: the needle
+points to hours 1–10, or red 1/2 for 11/12; top window shows minutes, lower
+window shows large `DD-MM`. The needle steps once per hour. Both variations
+remain in the same application; changing the setting does not require a
+second installation.
 
 The outer metal rim is removed with an inner-dial circular crop. Pixels outside
 the circle are flattened to black, so hidden rim RGB cannot leak through.
 The supplied needle is shortened and pivots about its hub, not the sprite
 centre. It is drawn last, **above the bezel and digits**, so it can cover part
-of the minutes near hour 7. Red numeral patches preserve the existing scale.
+of the upper date digit when its ones digit is 7 (or the minutes near hour 7
+in the original variation). Red numeral patches are used only by that original
+variation.
 
 Digits are solid red-orange seven-segment sprites generated without a font
 dependency. Subtle top-left highlights and lower-right shadow edges give the
 segments a raised bevel; shading is baked into the PNGs, not extra runtime
-layers. All digits have equal visible height, including 1/4/7. Minutes are
-28×44 px; date digits are 24×42 px (twice the original 21 px date height), in a
-124 px-wide date band. The date is centred by its visible strokes at x=322,
-not its container: days 10–19 shift 8 px left to compensate for the narrow
-leading 1. Both active and AOD use this layout. `digits.PNG` remains
+layers. All digital digits have equal visible height, including 1/4/7. Time
+digits are 24×48 px, in a 124 px-wide band centred at x=322 by visible strokes,
+not its container. Times beginning with 1 shift 8 px left. The date tens glyph
+is 58 px high and extracted from the actual supplied dark dial, not a substitute
+font. In the original variation, minutes are 28×44 px and date digits 24×42 px,
+with the same optical centring. Both active and AOD use the selected layout. `digits.PNG` remains
 in reference/ for provenance, but the dotted font is no longer used.
 
 ## Always-on
 
-Sleep mode uses the supplied **dark-speedometer.png**, with the same hour
-needle, red 11/12 highlights, minute digits, and date as the active face. Wake
+Sleep mode uses the supplied **dark-speedometer.png**, with the selected
+layout's same digital time/date and image needle. Wake
 restores the selected active theme. The dark plate is not further dimmed or
 pixel-shifted: this is intentionally a baseline for the owner's burn-in test,
 not a claim of AMOLED compliance. Static numerals, bezels, and the bright hub
@@ -55,13 +71,24 @@ allocated. Only the selected background is retained by the view.
 ```sh
 python3 tools/prepare_assets.py --preview
 python3 tools/test_assets.py
+python3 tools/check_aod.py
 ```
 
-`bin/light-preview.png`, `bin/dark-preview.png`, `bin/aod-preview.png`,
-`bin/needle-over-minutes-preview.png`, and `bin/hours-preview.png`
-are **static Pillow composition checks**, not simulator captures. The contact
-sheet shows 1–12 at minute 54 and date 10-08. Runtime date digits are scaled by
-the Garmin renderer; small rendering differences are possible.
+See [TESTING.md](TESTING.md) for verified simulator-launch results, offline AOD
+estimates, and the precise signed-build blocker. The AOD script is image
+screening, not the SDK heat-map test or a compliance certificate.
+
+These are **static Pillow composition checks**, not simulator captures:
+
+- `bin/light-preview.png`: 13:54, date 15, default date-gauge layout.
+- `bin/dark-preview.png` / `bin/aod-preview.png`: 23:54, date 31.
+- `bin/date-zero-preview.png`: 00:00, date 20 (needle at 0).
+- `bin/dates-preview.png`: representative dates including tens/ones boundaries.
+- `bin/needle-over-minutes-preview.png`: date 17, needle above the top digit.
+- `bin/legacy-light-preview.png` / `bin/hours-preview.png`: original variation.
+
+Runtime digital glyphs use Garmin's scaler; small rendering differences are
+possible.
 
 ## Build and test — run locally with your signing key
 
@@ -83,7 +110,7 @@ Signing must be performed by the owner; do not share the private key. Linux
 
 Enable **Log render performance** in simulator App Settings. The next updates
 print `drawMs`, `maxDrawMs`, `heap`, `maxObservedHeap`, and `free`, together with
-active/AOD and theme state. Logging is off by default. Times measure the draw
+active/AOD, theme, and date/hour-layout state. Logging is off by default. Times measure the draw
 path (including a theme load when applicable), excluding the log formatting
 itself. Observed heap is not the allocator peak; also inspect the simulator's
 Memory view/profiler. Simulator timing is not a device battery-life estimate.
@@ -94,20 +121,26 @@ times, and watch for growth over several minutes. Disable logging afterwards.
 The test PRG also reports the time/heap delta for 4,800 angle lookups and checks
 retained resources against 128 KB. These measurements have not been run yet.
 
-Rendering changes avoid per-update angle-array allocations, draw minute glyphs
-at native size (only date glyphs and needle require transforms), reuse the same
-transform object, and no longer load/redraw a window patch over the needle.
-No full-screen offscreen buffer or seconds animation is introduced.
+Rendering avoids per-update angle-array allocations, reuses one transform
+object, and does not load/redraw a window patch over the needle. Date-gauge
+mode draws its top digit at native size and scales four time sprites plus the
+needle. The original variation draws its minutes at native size. Four small
+packed date-tens sprites are retained in addition to the existing resources;
+the heap test includes them. No full-screen offscreen buffer or seconds
+animation is introduced.
 
 ### Runtime acceptance checklist (not yet verified)
 
 - Build both app and tests; all tests pass with retained heap below 128 KB.
-- Simulator: 00:00, 01:09, 10:59 → 11:00 → 12:00 → 13:00 and 23:59 → 00:00.
-- Verify label 1/2 registration, no leftover highlight after hour 12, and needle
-  direction at all hours on both themes.
-- Check date/month leading zeroes and date rollover, including month/year edges.
+- Default layout: check every date 01–31 on both themes, especially 09 → 10,
+  19 → 20, 29 → 30, and 31 → 01. Tens and needle must update together.
+- Check 10/20/30 point to 0, and printed 10 is unused. No red hour highlights.
+- Time: 00:00, 01:09, 10:59 → 11:00 → 12:00 → 13:00 and 23:59 → 00:00;
+  verify both 12-hour and 24-hour device settings and optical centring.
+- Toggle **Date gauge layout**: original top minutes / bottom DD-MM and red
+  hour-11/12 behaviour must return without stale overlays.
 - Change **Dark dial** through simulator App Settings; verify the plate switches
-  without memory errors, and the needle stays over the minutes in both modes.
+  without memory errors, and the needle stays above the upper display.
 - Check peak memory while actually drawing/rotating; the resource test alone
   does not prove the render path fits.
 - Enter low-power mode: verify the supplied dark artwork appears, record the
@@ -120,9 +153,12 @@ and select **Speedometer**. No device copy or deployment is automated here.
 ## Verification status
 
 Offline image/layout/XML checks are available in `tools/test_assets.py`.
-Ten offline asset/layout checks passed for the bevelled seven-segment,
-optically centred date, and foreground-needle revision. Compilation and runtime performance remain unverified for this
-revision. SDK 9.2.0, connectiq, monkeydo, and xvfb-run are installed on the coding
-host, but a signed updated PRG is required to run this face in the simulator.
+Fifteen offline asset/layout/metric checks passed for the digital-time/date-gauge
+revision, including all 31 dates, zero-angle calibration, matching numeral
+assets, time centring in both clock formats, and known-colour AOD calculations. Monkey C unit tests also
+cover all dates and time-format mappings, but have not been executed yet.
+Compilation and runtime performance remain unverified for this revision. SDK 9.2.0, connectiq, monkeydo, and xvfb-run are installed on the coding
+host. The native simulator launch was verified under Xvfb, but a signed updated
+PRG is still required to run this face and its unit tests. See TESTING.md.
 The coding agent has not accessed the owner's signing key. The owner can build
 locally and provide the app/test PRGs (not the key) for simulator checks.

@@ -5,6 +5,7 @@ Run from any directory. --preview also renders static composition checks, not
 simulator screenshots. Source crop coordinates are in the original PNG pixels.
 """
 from pathlib import Path
+from functools import lru_cache
 import argparse
 import math
 from PIL import Image, ImageChops, ImageDraw
@@ -22,6 +23,9 @@ LABELS = [(529, 989), (364, 898), (253, 759), (222, 585),
           (282, 418), (421, 284), (630, 229), (822, 283),
           (994, 418), (1015, 575)]
 LABEL_BOXES = [(498, 936, 557, 1038), (316, 843, 413, 948)]
+DATE_ZERO_LABEL = (625, 1010)
+DATE_TENS_BOXES = [(589, 976, 661, 1048), (498, 936, 557, 1038),
+                   (316, 843, 413, 948), (215, 708, 300, 815)]
 
 
 def resize(im, size):
@@ -63,6 +67,22 @@ def seven_segment_digits():
         clean.alpha_composite(glyph)
         glyphs.append(resize(clean, (28, 44)))
     return glyphs
+
+
+@lru_cache(maxsize=1)
+def dial_date_digits():
+    # Use the supplied dial's actual 0/1/2/3 shapes, not a substitute font.
+    source = Image.open(REF / 'dark-speedometer.png').convert('RGBA')
+    digits = []
+    for box in DATE_TENS_BOXES:
+        crop = source.crop(box)
+        mask = crop.convert('RGB').convert('L').point(
+            lambda value: max(0, min(255, round((value - 40) * 255 / 110))))
+        glyph = Image.new('RGBA', crop.size, (202, 193, 171, 255))
+        glyph.putalpha(mask)
+        glyph = glyph.crop(mask.getbbox())
+        digits.append(resize(glyph, (round(glyph.width * 58 / glyph.height), 58)))
+    return digits
 
 
 def prepare():
@@ -121,6 +141,8 @@ def prepare():
     glyphs = seven_segment_digits()
     for i, glyph in enumerate(glyphs):
         glyph.save(OUT / f'digit-{i}.png')
+    for i, glyph in enumerate(dial_date_digits()):
+        glyph.save(OUT / f'date-tens-{i}.png')
     return backgrounds, overlays, needle, glyphs
 
 
@@ -135,14 +157,31 @@ def date_start_x(glyphs, day, month):
     return 322 - (bounds[day // 10][0] + 100 + bounds[month % 10][2]) // 2
 
 
-def render(assets, hour, dark=False, minute=54, day=10, month=8, with_needle=True):
+def time_display_hour(hour, is24_hour=True):
+    return hour if is24_hour else (hour % 12 or 12)
+
+
+def time_start_x(glyphs, hour, is24_hour=True):
+    hour = time_display_hour(hour, is24_hour)
+    bounds = [resize(g, (24, 48)).getchannel('A').point(
+        lambda a: 255 if a > 128 else 0).getbbox() for g in glyphs]
+    return 322 - (bounds[hour // 10][0] + 100 + bounds[0][2]) // 2
+
+
+def render(assets, hour, dark=False, minute=54, day=10, month=8, with_needle=True,
+           date_gauge=False, is24_hour=True):
     backgrounds, overlays, needle, glyphs = assets
     canvas = backgrounds[int(dark)].copy()
-    idx = hour if hour <= 10 else hour - 10
-    if hour > 10:
-        label, xy = overlays[idx - 1]
-        canvas.alpha_composite(label, xy)
-    x, y = LABELS[idx - 1]
+    if date_gauge:
+        ones = day % 10
+        x, y = DATE_ZERO_LABEL if ones == 0 else LABELS[ones - 1]
+    else:
+        dial_hour = hour % 12 or 12
+        idx = dial_hour if dial_hour <= 10 else dial_hour - 10
+        if dial_hour > 10:
+            label, xy = overlays[idx - 1]
+            canvas.alpha_composite(label, xy)
+        x, y = LABELS[idx - 1]
     dx = (x - CROP[0]) * SCALE - PIVOT[0]
     dy = (y - CROP[1]) * SCALE - PIVOT[1]
     # Pillow's positive rotation is counter-clockwise; align down to target.
@@ -150,14 +189,26 @@ def render(assets, hour, dark=False, minute=54, day=10, month=8, with_needle=Tru
     layer = Image.new('RGBA', (SIZE, SIZE))
     layer.alpha_composite(needle, (PIVOT[0] - 34, PIVOT[1] - 34))
     layer = layer.rotate(angle, Image.Resampling.BICUBIC, center=PIVOT)
-    for digit, xx in [(minute // 10, 196), (minute % 10, 230)]:
-        canvas.alpha_composite(glyphs[digit], (xx, 108))
-    # Almost minute-size date digits, optically centred in the lower screen.
-    date_x = date_start_x(glyphs, day, month)
-    for digit, xx in [(day // 10, date_x), (day % 10, date_x + 28),
-                      (month // 10, date_x + 72), (month % 10, date_x + 100)]:
-        canvas.alpha_composite(resize(glyphs[digit], (24, 42)), (xx, 326))
-    ImageDraw.Draw(canvas).rectangle((date_x + 58, 346, date_x + 65, 349), fill='#ff4020')
+    if date_gauge:
+        tens = dial_date_digits()[day // 10]
+        canvas.alpha_composite(tens, (227 - tens.width // 2, 105))
+        display_hour = time_display_hour(hour, is24_hour)
+        time_x = time_start_x(glyphs, hour, is24_hour)
+        for digit, xx in [(display_hour // 10, time_x), (display_hour % 10, time_x + 28),
+                          (minute // 10, time_x + 72), (minute % 10, time_x + 100)]:
+            canvas.alpha_composite(resize(glyphs[digit], (24, 48)), (xx, 323))
+        draw = ImageDraw.Draw(canvas)
+        for y in (336, 354):
+            draw.rectangle((time_x + 60, y, time_x + 63, y + 4), fill='#ff4020')
+    else:
+        for digit, xx in [(minute // 10, 196), (minute % 10, 230)]:
+            canvas.alpha_composite(glyphs[digit], (xx, 108))
+        # Legacy layout: minutes above, large DD-MM below.
+        date_x = date_start_x(glyphs, day, month)
+        for digit, xx in [(day // 10, date_x), (day % 10, date_x + 28),
+                          (month // 10, date_x + 72), (month % 10, date_x + 100)]:
+            canvas.alpha_composite(resize(glyphs[digit], (24, 42)), (xx, 326))
+        ImageDraw.Draw(canvas).rectangle((date_x + 58, 346, date_x + 65, 349), fill='#ff4020')
     # The needle is intentionally above the bezel AND digits, including AOD.
     if with_needle:
         canvas.alpha_composite(layer)
@@ -173,10 +224,19 @@ def preview(assets):
     dest = ROOT / 'bin'
     dest.mkdir(exist_ok=True)
     sheet.save(dest / 'hours-preview.png')
-    render(assets, 11).save(dest / 'light-preview.png')
-    render(assets, 12, dark=True).save(dest / 'dark-preview.png')
-    render(assets, 12, dark=True).save(dest / 'aod-preview.png')
-    render(assets, 7).save(dest / 'needle-over-minutes-preview.png')
+    render(assets, 11).save(dest / 'legacy-light-preview.png')
+    render(assets, 13, day=15, date_gauge=True).save(dest / 'light-preview.png')
+    render(assets, 23, day=31, dark=True, date_gauge=True).save(dest / 'dark-preview.png')
+    render(assets, 23, day=31, dark=True, date_gauge=True).save(dest / 'aod-preview.png')
+    render(assets, 7, day=17, date_gauge=True).save(dest / 'needle-over-minutes-preview.png')
+    render(assets, 0, minute=0, day=20, date_gauge=True).save(dest / 'date-zero-preview.png')
+    dates = [1, 5, 7, 9, 10, 11, 15, 17, 20, 21, 27, 31]
+    sheet = Image.new('RGB', (SIZE * 4, SIZE * 3), '#222222')
+    for i, day in enumerate(dates):
+        canvas = render(assets, 13, day=day, date_gauge=True)
+        ImageDraw.Draw(canvas).text((190, 425), f'Date {day:02}', fill='white')
+        sheet.paste(canvas, ((i % 4) * SIZE, (i // 4) * SIZE), canvas)
+    sheet.save(dest / 'dates-preview.png')
 
 
 if __name__ == '__main__':
