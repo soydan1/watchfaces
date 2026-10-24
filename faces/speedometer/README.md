@@ -52,29 +52,6 @@ The black lower-panel fill is baked into the light background using a mask of
 the dark artwork's inner LCD, preserving the rounded bezel. `digits.PNG` remains
 in reference/ for provenance, but the dotted font is no longer used.
 
-## Wake-up transition
-
-**Wake-up fade** is enabled by default in App Settings and can be disabled.
-After sleep, a visible face in confirmed high-power mode crossfades the dark
-dial into the yellow dial over a target **300 ms**. It skips the effect on cold
-start, while hidden, or when **Dark dial** is selected (the two endpoints would
-already match). The digital displays and image needle are drawn separately
-above the background and are not faded or moved.
-
-A 50 ms high-power-only timer requests frames. Timing uses elapsed milliseconds,
-so slow rendering skips frames instead of prolonging a callback counter. Sleep,
-hide, disabling the effect, an off/low-power display, or completion cancels the
-timer and releases the current transition reference. Entering AOD is a direct
-switch, never a fade-out. The timer is not started from the sleep/wake callback
-or a low-power draw.
-
-Five pre-blended packed PNGs add **1,088,078 bytes (~1.04 MiB)** of source assets.
-Only the current intermediate is retained by the view alongside the target
-plate; no full-screen buffered bitmap or runtime crossfade is allocated. The
-graphics pool can still cache resources, so actual draw cost, peak memory,
-frame cadence, and device behaviour must be measured with the signed build.
-The requested timing is not a guarantee of native frame rate.
-
 ## Always-on
 
 Sleep mode uses the supplied **dark-speedometer.png**, with the selected
@@ -114,9 +91,6 @@ These are **static Pillow composition checks**, not simulator captures:
 - `bin/date-zero-preview.png`: 00:00, date 20 (needle at 0).
 - `bin/dates-preview.png`: representative dates including tens/ones boundaries.
 - `bin/font-preview.png`: the reference-inspired N and new digits 0–9.
-- `bin/wake-preview.gif`: mocked 300 ms fade, followed by a final-frame hold.
-- `bin/wake-midpoint-preview.png`: the midpoint background blend.
-  These are generated design previews, not SDK animation captures.
 - `bin/needle-over-minutes-preview.png`: date 17, needle above the top digit.
 - `bin/legacy-light-preview.png` / `bin/hours-preview.png`: original variation.
 
@@ -142,7 +116,7 @@ Signing must be performed by the owner; do not share the private key. Linux
 ### Performance diagnostics
 
 Enable **Log render performance** in simulator App Settings. The next updates
-print `drawMs`, `maxDrawMs`, `heap`, `maxObservedHeap`, `fadeFrame`, and `free`, with
+print `drawMs`, `maxDrawMs`, `heap`, `maxObservedHeap`, and `free`, together with
 active/AOD, theme, and date/hour-layout state. Logging is off by default. Times measure the draw
 path (including a theme load when applicable), excluding the log formatting
 itself. Observed heap is not the allocator peak; also inspect the simulator's
@@ -159,8 +133,8 @@ object, and does not load/redraw a window patch over the needle. Date-gauge
 mode draws its top digit at native size and scales four time sprites plus the
 needle. The original variation draws its minutes at native size. Four small
 packed date-tens sprites are retained in addition to the existing resources;
-the heap test includes them and each intermediate wake resource. No full-screen
-offscreen buffer or seconds animation is introduced.
+the heap test includes them. No full-screen offscreen buffer or seconds
+animation is introduced.
 
 ### Runtime acceptance checklist (not yet verified)
 
@@ -174,12 +148,8 @@ offscreen buffer or seconds animation is introduced.
   hour-11/12 behaviour must return without stale overlays.
 - Change **Dark dial** through simulator App Settings; verify the plate switches
   without memory errors, and the needle stays above the upper display.
-- Check peak memory while actually drawing/rotating, including the wake frames;
-  the resource test alone does not prove the render path fits.
-- Verify one wake fade then no timer activity at steady state; re-enter sleep
-  mid-fade and confirm the dark plate replaces it with no timer/power errors.
-- Disable **Wake-up fade** and select **Dark dial**, separately: both must skip
-  animation. Check rapid sleep/wake, hide/show, and cold-start behaviour.
+- Check peak memory while actually drawing/rotating; the resource test alone
+  does not prove the render path fits.
 - Enter low-power mode: verify the supplied dark artwork appears, record the
   screen heat map/AMOLED warnings, and verify wake restores the selected theme.
   Full-artwork AOD compliance is not established.
@@ -190,11 +160,11 @@ and select **Speedometer**. No device copy or deployment is automated here.
 ## Verification status
 
 Offline image/layout/XML checks are available in `tools/test_assets.py`.
-Twenty-one offline asset/layout/metric/wiring checks passed, including fade
-asset endpoints/interpolation, phase timing, unchanged foreground ink, and
-source-level sleep/hide/timer guards. These do not execute Monkey C. Additional
-Monkey C unit tests cover fade state, cancellation/restart, skipped frames,
-all dates, and 24-hour mappings, but have not been executed yet.
+Seventeen offline asset/layout/metric checks passed for the stencil-font and
+black-window revision, including all 31 dates, zero-angle calibration, shared
+font assets, fixed-24-hour time centring, rounded black LCD masking, stencil
+cutouts, and known-colour AOD calculations. Monkey C unit tests also
+cover all dates and 24-hour mappings, but have not been executed yet.
 Compilation and runtime performance remain unverified for this revision. SDK 9.2.0, connectiq, monkeydo, and xvfb-run are installed on the coding
 host. The native simulator launch was verified under Xvfb, but a signed updated
 PRG is still required to run this face and its unit tests. See TESTING.md.

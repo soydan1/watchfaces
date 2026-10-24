@@ -1,8 +1,8 @@
 # Date-gauge revision: verification results
 
-These results cover the current working-tree wake-fade revision, retaining
-the stencil font, black LCD and fixed 24-hour time. AOD image metrics below
-measure the unchanged static low-power layout, not the high-power transition.
+These results cover the current working-tree stencil-font/black-LCD revision,
+with digital time fixed to 24-hour format. Older AOD image estimates have been
+replaced by measurements of the new glyph assets.
 
 ## Verified on the coding host
 
@@ -12,11 +12,9 @@ measure the unchanged static low-power layout, not the high-power transition.
 - The native **Connect IQ simulator opened an X11 window under Xvfb**. The
   window title was detected through X11, then that test process was closed.
   This was a launcher smoke test only: Speedometer was not loaded.
-- **21 offline asset/layout/metric/wiring checks passed.** They cover the date
-  mapping, shared font, centring, black LCD, legacy layout, AOD metric formulas,
-  wake timing/eligibility, blend endpoints/bounds, unchanged foreground ink,
-  and source-level sleep/hide/timer-cancellation guards. They do not execute
-  Monkey C or prove actual SDK callback/timer behaviour.
+- **17 offline asset/layout/metric checks passed.** They cover the date mapping,
+  shared stencil font, pointer calibration, fixed 24-hour time, centring, rounded
+  black LCD masking, legacy layout rendering, and AOD metrics on known colours.
 
 ## Offline AOD screening (not a simulator pass)
 
@@ -58,23 +56,6 @@ Generated details, ignored by Git:
 
 SDK reference: `doc/docs/Connect_IQ_FAQ/How_Do_I_Make_a_Watch_Face_for_AMOLED_Products.html`.
 
-## Wake-fade checks and pending runtime validation
-
-The 300 ms effect uses five packed pre-blended backgrounds (1,088,078 bytes
-of additional PNG assets), with 50 ms high-power-only update requests. The view
-retains only its current intermediate alongside the final target plate. It
-never allocates a full-screen blending buffer. The graphics pool may cache
-additional images; native peak memory and decoding time are still unknown.
-
-`test/WakeFadeTest.mc` adds pure Monkey C state tests for eligibility, phase
-progression, completion, skipped frames, cancellation before/after starting,
-and restart. They never start an SDK timer from the test runner and remain
-**unexecuted** until a signed test PRG is provided. The resource heap test now
-checks each intermediate, retaining one at a time.
-
-The GIF in `bin/wake-preview.gif` is a generated design preview (300 ms fade
-plus a final-frame hold), not evidence of native animation performance.
-
 ## Runtime test blocker
 
 No signed updated `Speedometer.prg` or `SpeedometerTest.prg` is available here.
@@ -97,15 +78,11 @@ has been obtained for this revision.
 2. Run `monkeydo bin/Speedometer.prg d2mach2` and enable **Log render performance**
    through App Settings. Record cold-start/steady-state draw times and observed
    heap; use the simulator memory/profiler tools for actual allocation peaks.
-3. Enable **Wake-up fade**, enter AOD, and wake the face. Verify it finishes
-   around 300 ms and `fadeFrame` settles at 6. Re-enter sleep mid-fade: no more
-   high-power frames/timer activity should occur. Test disabling the fade,
-   selecting Dark dial, hiding/showing the view, and rapid repeated wakes.
-4. Exercise both layouts/themes and repeated sleep/wake transitions. Check
+3. Exercise both layouts/themes and repeated sleep/wake transitions. Check
    09→10, 19→20, 29→30, 31→01, midnight, and fixed 24-hour output even if the
    watch's own clock preference is 12-hour. Verify the high-power time panel is
    black and its rounded bezel has not been covered.
-5. Enter low-power mode. Where enabled, use **File → View Screen Heat Map** and
+4. Enter low-power mode. Where enabled, use **File → View Screen Heat Map** and
    start the SDK's accelerated test. Record device-specific luminance/protection
    results rather than treating the offline image estimates as an SDK result.
-6. Leave always-on disabled for regular device use until those checks pass.
+5. Leave always-on disabled for regular device use until those checks pass.

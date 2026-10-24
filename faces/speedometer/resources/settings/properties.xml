@@ -2,5 +2,4 @@
     <property id="DarkTheme" type="boolean">false</property>
     <property id="Diagnostics" type="boolean">false</property>
     <property id="DateGauge" type="boolean">true</property>
-    <property id="WakeFade" type="boolean">true</property>
 </properties>

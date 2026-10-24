@@ -21,9 +21,4 @@
     <bitmap id="DateTens1" filename="date-tens-1.png" packingFormat="png" dithering="none" />
     <bitmap id="DateTens2" filename="date-tens-2.png" packingFormat="png" dithering="none" />
     <bitmap id="DateTens3" filename="date-tens-3.png" packingFormat="png" dithering="none" />
-    <bitmap id="Wake1" filename="wake-1.png" packingFormat="png" dithering="none" />
-    <bitmap id="Wake2" filename="wake-2.png" packingFormat="png" dithering="none" />
-    <bitmap id="Wake3" filename="wake-3.png" packingFormat="png" dithering="none" />
-    <bitmap id="Wake4" filename="wake-4.png" packingFormat="png" dithering="none" />
-    <bitmap id="Wake5" filename="wake-5.png" packingFormat="png" dithering="none" />
 </drawables>

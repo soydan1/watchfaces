@@ -8,7 +8,4 @@
     <setting propertyKey="@Properties.Diagnostics" title="@Strings.DiagnosticsTitle">
         <settingConfig type="boolean" />
     </setting>
-    <setting propertyKey="@Properties.WakeFade" title="@Strings.WakeFadeTitle">
-        <settingConfig type="boolean" />
-    </setting>
 </settings>

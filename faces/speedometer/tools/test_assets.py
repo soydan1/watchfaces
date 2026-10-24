@@ -3,7 +3,7 @@ import math
 import re
 import unittest
 import xml.etree.ElementTree as ET
-from PIL import Image, ImageChops, ImageDraw
+from PIL import Image, ImageChops
 import prepare_assets as art
 
 
@@ -204,81 +204,6 @@ class AssetTests(unittest.TestCase):
         neutral = art.dashboard_glyph('N')
         self.assertEqual(neutral.size, eight.size)
         self.assertNotEqual(neutral.tobytes(), eight.tobytes())
-
-    def test_wake_timing_and_eligibility_match_runtime_constants(self):
-        source = (art.ROOT / 'source/WakeFade.mc').read_text()
-        constants = {key: int(value) for key, value in re.findall(
-            r'const (\w+) = (\d+);', source)}
-        self.assertEqual(constants['DURATION_MS'], art.WAKE_DURATION_MS)
-        self.assertEqual(constants['INTERVAL_MS'], art.WAKE_INTERVAL_MS)
-        self.assertEqual(constants['LAST_FRAME'], art.WAKE_LAST_FRAME)
-        phases = [art.wake_frame_index(ms) for ms in range(-50, 401)]
-        self.assertEqual(phases, sorted(phases))
-        self.assertEqual(set(phases), set(range(7)))
-        self.assertEqual([art.wake_frame_index(ms) for ms in range(0, 301, 50)],
-                         list(range(7)))
-        for flags in range(16):
-            self.assertEqual(art.wake_allowed(bool(flags & 1), bool(flags & 2),
-                                             bool(flags & 4), bool(flags & 8)), flags == 6)
-
-    def test_wake_background_frames_and_endpoints(self):
-        light, dark = self.assets[0]
-        self.assertEqual(art.wake_background(dark, light, 0).tobytes(), dark.tobytes())
-        self.assertEqual(art.wake_background(dark, light, 6).tobytes(), light.tobytes())
-        lower = ImageChops.darker(light.convert('RGB'), dark.convert('RGB'))
-        upper = ImageChops.lighter(light.convert('RGB'), dark.convert('RGB'))
-        for frame in range(1, 6):
-            actual = Image.open(art.OUT / f'wake-{frame}.png').convert('RGBA')
-            expected = art.wake_background(dark, light, frame)
-            self.assertEqual(actual.tobytes(), expected.tobytes())
-            self.assertEqual(actual.size, (454, 454))
-            self.assertIsNone(ImageChops.subtract(lower, actual.convert('RGB')).getbbox())
-            self.assertIsNone(ImageChops.subtract(actual.convert('RGB'), upper).getbbox())
-
-    def test_wake_keeps_time_and_needle_stationary(self):
-        baseline = art.render(self.assets, 13, day=15, date_gauge=True, wake_frame=0)
-        # Compare opaque foreground ink, not the bezel or anti-aliased edges
-        # whose underlying background is intentionally changing during a fade.
-        ink = Image.new('L', (454, 454))
-        x = art.time_start_x(self.assets[3], 13)
-        for digit, offset in [(1, 0), (3, 28), (5, 72), (4, 100)]:
-            alpha = art.resize(self.assets[3][digit], (24, 48)).getchannel('A').point(
-                lambda a: 255 if a == 255 else 0)
-            ink.paste(alpha, (x + offset, 323))
-        draw = ImageDraw.Draw(ink)
-        for y in [336, 354]:
-            draw.rectangle((x + 60, y, x + 63, y + 4), fill=255)
-        self.assertGreater(ink.histogram()[255], 0)
-        for frame in range(1, 7):
-            actual = art.render(self.assets, 13, day=15, date_gauge=True, wake_frame=frame)
-            diff = ImageChops.difference(actual.convert('RGB'), baseline.convert('RGB'))
-            self.assertIsNone(ImageChops.multiply(diff, ink.convert('RGB')).getbbox())
-            self.assertEqual(actual.getpixel(art.PIVOT), baseline.getpixel(art.PIVOT))
-
-    def test_wake_lifecycle_guards_and_cancellation_wiring(self):
-        source = (art.ROOT / 'source/SpeedometerView.mc').read_text()
-        sleep = source.split('function onEnterSleep()')[1].split('function onExitSleep()')[0]
-        hide = source.split('function onHide()')[1].split('function onEnterSleep()')[0]
-        wake = source.split('function onExitSleep()')[1].split('private function isLowPower()')[0]
-        tick = source.split('function onWakeFadeTick()')[1].split('private function drawBackground(')[0]
-        draw = source.split('private function drawBackground(')[1].split('function onUpdate(')[0]
-        stop = source.split('private function stopWakeFade()')[1].split('function onWakeFadeTick()')[0]
-        self.assertIn('stopWakeFade();', sleep)
-        self.assertIn('stopWakeFade();', hide)
-        self.assertIn('_fade.queue();', wake)
-        self.assertNotIn('timer.start(', wake)
-        self.assertNotIn('timer.start(', tick)
-        self.assertIn('canAnimateWake(lowPower)', tick)
-        self.assertIn('stopWakeFade();', tick)
-        self.assertIn('_wakeTimer.stop();', stop)
-        self.assertIn('_fade.cancel();', stop)
-        self.assertIn('_wakeFrame = null;', stop)
-        self.assertEqual(source.count('timer.start('), 1)
-        self.assertLess(draw.index('_fade.advance('), draw.index('timer.start('))
-        self.assertLess(draw.index('if (_fade.isActive())'), draw.index('timer.start('))
-        self.assertIn('System.getDisplayMode() != System.DISPLAY_MODE_HIGH_POWER', source)
-        properties = ET.parse(art.ROOT / 'resources/settings/properties.xml').getroot()
-        self.assertEqual(properties.find("property[@id='WakeFade']").text, 'true')
 
     def test_aod_screening_metrics_on_known_colors(self):
         from check_aod import metrics, screen_mask

@@ -133,18 +133,6 @@ module SpeedometerTest {
         loaded.add(WatchUi.loadResource(Rez.Drawables.BackgroundDark));
         used = System.getSystemStats().usedMemory;
         logger.debug("Speedometer theme-switch heap=" + used);
-        if (used >= 131072) { return false; }
-        var wakeIds = [Rez.Drawables.Wake1, Rez.Drawables.Wake2, Rez.Drawables.Wake3,
-                       Rez.Drawables.Wake4, Rez.Drawables.Wake5];
-        var wake as BitmapResource? = null;
-        for (var j = 0; j < wakeIds.size(); j++) {
-            wake = null;
-            wake = WatchUi.loadResource(wakeIds[j]) as BitmapResource;
-            if (wake.getWidth() != 454 || wake.getHeight() != 454) { return false; }
-            used = System.getSystemStats().usedMemory;
-            logger.debug("Speedometer wake frame=" + j + " retained heap=" + used);
-            if (used >= 131072) { return false; }
-        }
-        return true;
+        return used < 131072;
     }
 }
