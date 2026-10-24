@@ -26,6 +26,9 @@ LABEL_BOXES = [(498, 936, 557, 1038), (316, 843, 413, 948)]
 DATE_ZERO_LABEL = (625, 1010)
 TIME_WINDOW_BOX = (250, 294, 395, 410)
 DISPLAY_COLOR = (255, 226, 145, 255)
+WAKE_DURATION_MS = 300
+WAKE_INTERVAL_MS = 50
+WAKE_LAST_FRAME = 6
 
 
 def resize(im, size):
@@ -100,6 +103,22 @@ def black_time_window_mask(dark_background):
     return candidate.point(lambda value: 255 if value == 128 else 0)
 
 
+def wake_frame_index(elapsed_ms):
+    return min(WAKE_LAST_FRAME, max(0, elapsed_ms * WAKE_LAST_FRAME // WAKE_DURATION_MS))
+
+
+def wake_allowed(low_power, visible, enabled, dark_theme):
+    return not low_power and visible and enabled and not dark_theme
+
+
+def wake_background(dark, light, frame):
+    if not 0 <= frame <= WAKE_LAST_FRAME:
+        raise ValueError('Wake frame outside supported range')
+    t = frame / WAKE_LAST_FRAME
+    eased = t * t * (3 - 2 * t)
+    return Image.blend(dark, light, eased)
+
+
 def prepare():
     OUT.mkdir(parents=True, exist_ok=True)
     backgrounds = []
@@ -126,6 +145,9 @@ def prepare():
         bg.save(OUT / dest)
         window_name = 'window-dark.png' if 'dark' in dest else 'window.png'
         bg.crop((180, 81, 273, 185)).save(OUT / window_name)
+    for frame in range(1, WAKE_LAST_FRAME):
+        wake_background(backgrounds[1], backgrounds[0], frame).save(
+            OUT / f'wake-{frame}.png')
     original = Image.open(REF / 'speedometer.PNG').convert('RGBA')
     for i, box in enumerate(LABEL_BOXES, 1):
         label = original.crop(box)
@@ -188,9 +210,11 @@ def time_start_x(glyphs, hour):
 
 
 def render(assets, hour, dark=False, minute=54, day=10, month=8, with_needle=True,
-           date_gauge=False):
+           date_gauge=False, wake_frame=None):
     backgrounds, overlays, needle, glyphs = assets
     canvas = backgrounds[int(dark)].copy()
+    if wake_frame is not None and not dark:
+        canvas = wake_background(backgrounds[1], backgrounds[0], wake_frame)
     if date_gauge:
         ones = day % 10
         x, y = DATE_ZERO_LABEL if ones == 0 else LABELS[ones - 1]
@@ -261,6 +285,13 @@ def preview(assets):
         glyph = dashboard_glyph(character)
         strip.alpha_composite(resize(glyph, (38, 60)), (i * 48 + 5, 6))
     strip.save(dest / 'font-preview.png')
+    # Design preview only; timer scheduling/bitmap costs need SDK testing.
+    frames = [render(assets, 13, day=15, date_gauge=True, wake_frame=frame)
+              for frame in range(WAKE_LAST_FRAME + 1)]
+    frames[0].save(dest / 'wake-preview.gif', save_all=True, append_images=frames[1:],
+                   duration=[WAKE_INTERVAL_MS] * WAKE_LAST_FRAME + [900], loop=0,
+                   disposal=2)
+    frames[3].save(dest / 'wake-midpoint-preview.png')
 
 
 if __name__ == '__main__':
