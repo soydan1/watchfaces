@@ -1,7 +1,8 @@
 # Date-gauge revision: verification results
 
-These results cover the current working-tree digital-time/date-gauge revision,
-not just the previously pushed hour-gauge build.
+These results cover the current working-tree stencil-font/black-LCD revision,
+with digital time fixed to 24-hour format. Older AOD image estimates have been
+replaced by measurements of the new glyph assets.
 
 ## Verified on the coding host
 
@@ -11,9 +12,9 @@ not just the previously pushed hour-gauge build.
 - The native **Connect IQ simulator opened an X11 window under Xvfb**. The
   window title was detected through X11, then that test process was closed.
   This was a launcher smoke test only: Speedometer was not loaded.
-- **15 offline asset/layout/metric checks passed.** They cover the date mapping,
-  dial numeral assets, pointer calibration, both time formats, centring, legacy
-  layout rendering, and AOD metric calculations on known colours.
+- **17 offline asset/layout/metric checks passed.** They cover the date mapping,
+  shared stencil font, pointer calibration, fixed 24-hour time, centring, rounded
+  black LCD masking, legacy layout rendering, and AOD metrics on known colours.
 
 ## Offline AOD screening (not a simulator pass)
 
@@ -32,12 +33,12 @@ The screen mask contains 161,800 pixels. Results:
 
 | Estimate | Sampled minimum | Sampled maximum |
 |---|---:|---:|
-| Gamma-encoded RGB-weighted luma | 8.840% | 9.594% |
-| Linear-sRGB luminance | 3.581% | 4.030% |
-| Non-black pixel coverage | 42.916% | 44.260% |
+| Gamma-encoded RGB-weighted luma | 8.946% | 9.493% |
+| Linear-sRGB luminance | 3.833% | 4.259% |
+| Non-black pixel coverage | 42.451% | 43.396% |
 
 The highest encoded-luma sample was date **09**, time **08:08**. At date 15,
-**69,291 pixels (42.825%)** remained non-black in every sampled frame from
+**68,513 pixels (42.344%)** remained non-black in every sampled frame from
 13:54 through 13:57.
 
 These are intentionally different metrics. The SDK FAQ says the original Venu
@@ -78,7 +79,9 @@ has been obtained for this revision.
    through App Settings. Record cold-start/steady-state draw times and observed
    heap; use the simulator memory/profiler tools for actual allocation peaks.
 3. Exercise both layouts/themes and repeated sleep/wake transitions. Check
-   09→10, 19→20, 29→30, 31→01, midnight, and both time formats.
+   09→10, 19→20, 29→30, 31→01, midnight, and fixed 24-hour output even if the
+   watch's own clock preference is 12-hour. Verify the high-power time panel is
+   black and its rounded bezel has not been covered.
 4. Enter low-power mode. Where enabled, use **File → View Screen Heat Map** and
    start the SDK's accelerated test. Record device-specific luminance/protection
    results rather than treating the offline image estimates as an SDK result.

@@ -6,6 +6,7 @@ module SpeedometerGeometry {
     const PIVOT_X = 227;
     const PIVOT_Y = 230;
     const NEEDLE_PIVOT = 34;
+    const DISPLAY_COLOR = 0xFFE291;
     const DATE_CENTER_X = 322;
     const DATE_X_NORMAL = 260;
     const DATE_X_LEADING_ONE = 252;
@@ -61,13 +62,14 @@ module SpeedometerGeometry {
         return ones == 0 ? DATE_ZERO_ANGLE : _angles[ones - 1];
     }
 
-    function displayHour(hour as Number, is24Hour as Boolean) as Number {
-        return is24Hour ? hour : dialHour(hour);
+    // Digital time is always 24-hour, regardless of the device preference.
+    function displayHour(hour as Number) as Number {
+        return hour;
     }
 
-    function timeStartX(hour as Number, is24Hour as Boolean) as Number {
+    function timeStartX(hour as Number) as Number {
         // Same 24px glyph widths as the legacy date; only the height changes.
-        return dateStartX(displayHour(hour, is24Hour));
+        return dateStartX(displayHour(hour));
     }
 
     // Sleep always uses the supplied dark plate; wake restores the preference.

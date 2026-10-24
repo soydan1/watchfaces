@@ -24,65 +24,80 @@ LABELS = [(529, 989), (364, 898), (253, 759), (222, 585),
           (994, 418), (1015, 575)]
 LABEL_BOXES = [(498, 936, 557, 1038), (316, 843, 413, 948)]
 DATE_ZERO_LABEL = (625, 1010)
-DATE_TENS_BOXES = [(589, 976, 661, 1048), (498, 936, 557, 1038),
-                   (316, 843, 413, 948), (215, 708, 300, 815)]
+TIME_WINDOW_BOX = (250, 294, 395, 410)
+DISPLAY_COLOR = (255, 226, 145, 255)
 
 
 def resize(im, size):
     return im.resize(size, Image.Resampling.LANCZOS)
 
 
-def seven_segment_digits():
-    # Bevel-ended dashboard segments; all shading is baked into the PNGs.
-    # No extra runtime layers, installed font, dots, or outer glow.
+def dashboard_glyph(character):
+    # Original segmented/stencil design inspired by the F430 neutral "N".
+    # Split centre bars and chamfered strokes, not an exact extracted font.
     segments = {
-        'a': [(5, 1), (23, 1), (26, 4), (23, 7), (5, 7), (2, 4)],
-        'g': [(5, 19), (23, 19), (26, 22), (23, 25), (5, 25), (2, 22)],
-        'd': [(5, 37), (23, 37), (26, 40), (23, 43), (5, 43), (2, 40)],
-        # Full-height vertical tips keep 1/4/7 optically as tall as 0/5/8.
-        'f': [(1, 5), (4, 1), (7, 5), (7, 17), (4, 21), (1, 17)],
-        'b': [(21, 5), (24, 1), (27, 5), (27, 17), (24, 21), (21, 17)],
-        'e': [(1, 27), (4, 23), (7, 27), (7, 39), (4, 43), (1, 39)],
-        'c': [(21, 27), (24, 23), (27, 27), (27, 39), (24, 43), (21, 39)],
+        'a': [(5, 1), (23, 1), (26, 3), (23, 5), (5, 5), (2, 3)],
+        'g1': [(5, 20), (12, 20), (13, 22), (12, 24), (5, 24), (2, 22)],
+        'g2': [(16, 20), (23, 20), (26, 22), (23, 24), (16, 24), (15, 22)],
+        'd': [(5, 39), (23, 39), (26, 41), (23, 43), (5, 43), (2, 41)],
+        # Full-height tips keep 1/4/7 optically as tall as 0/5/8.
+        'f': [(1, 5), (3, 1), (5, 5), (5, 17), (3, 19), (1, 17)],
+        'b': [(21, 5), (24, 1), (27, 5), (27, 17), (24, 19), (21, 17)],
+        'e': [(1, 27), (3, 25), (5, 27), (5, 39), (3, 43), (1, 39)],
+        'c': [(21, 27), (24, 25), (27, 27), (27, 39), (24, 43), (21, 39)],
+        'h': [(7, 5), (11, 8), (14, 18), (13, 20), (10, 17)],
+        'm': [(15, 24), (18, 27), (22, 38), (20, 40), (17, 35)],
     }
-    patterns = ['abcdef', 'bc', 'abged', 'abgcd', 'fgbc',
-                'afgcd', 'afgecd', 'abc', 'abcdefg', 'abfgcd']
-    glyphs = []
-    for pattern in patterns:
-        mask = Image.new('L', (28 * 4, 44 * 4))
-        draw = ImageDraw.Draw(mask)
-        for segment in pattern:
-            draw.polygon([(x * 4, y * 4) for x, y in segments[segment]], fill=255)
-        # Inset top-left highlight and bottom-right shadow, both inside the
-        # original silhouette so digit heights and spacing remain unchanged.
-        highlight = ImageChops.subtract(mask, ImageChops.offset(mask, 3, 3))
-        shadow = ImageChops.subtract(mask, ImageChops.offset(mask, -3, -3))
-        glyph = Image.new('RGBA', mask.size, (255, 64, 32, 255))
-        glyph = Image.composite(Image.new('RGBA', mask.size, (190, 38, 12, 255)),
-                                glyph, shadow)
-        glyph = Image.composite(Image.new('RGBA', mask.size, (255, 150, 88, 255)),
-                                glyph, highlight)
-        glyph.putalpha(mask)
-        clean = Image.new('RGBA', mask.size)
-        clean.alpha_composite(glyph)
-        glyphs.append(resize(clean, (28, 44)))
-    return glyphs
+    patterns = {
+        '0': ('a', 'b', 'c', 'd', 'e', 'f'), '1': ('b', 'c'),
+        '2': ('a', 'b', 'g1', 'g2', 'e', 'd'),
+        '3': ('a', 'b', 'g1', 'g2', 'c', 'd'),
+        '4': ('f', 'g1', 'g2', 'b', 'c'),
+        '5': ('a', 'f', 'g1', 'g2', 'c', 'd'),
+        '6': ('a', 'f', 'g1', 'g2', 'e', 'c', 'd'),
+        '7': ('a', 'b', 'c'),
+        '8': ('a', 'b', 'c', 'd', 'e', 'f', 'g1', 'g2'),
+        '9': ('a', 'b', 'f', 'g1', 'g2', 'c', 'd'),
+        'N': ('f', 'e', 'h', 'm', 'b', 'c'),
+    }
+    mask = Image.new('L', (28 * 4, 44 * 4))
+    draw = ImageDraw.Draw(mask)
+    for segment in patterns[character]:
+        draw.polygon([(x * 4, y * 4) for x, y in segments[segment]], fill=255)
+    # Baked bevel: no added runtime layers or glow, and unchanged silhouette.
+    highlight = ImageChops.subtract(mask, ImageChops.offset(mask, 2, 2))
+    shadow = ImageChops.subtract(mask, ImageChops.offset(mask, -2, -2))
+    glyph = Image.new('RGBA', mask.size, DISPLAY_COLOR)
+    glyph = Image.composite(Image.new('RGBA', mask.size, (177, 113, 36, 255)), glyph, shadow)
+    glyph = Image.composite(Image.new('RGBA', mask.size, (255, 247, 207, 255)), glyph, highlight)
+    glyph.putalpha(mask)
+    clean = Image.new('RGBA', mask.size)
+    clean.alpha_composite(glyph)
+    return resize(clean, (28, 44))
 
 
 @lru_cache(maxsize=1)
-def dial_date_digits():
-    # Use the supplied dial's actual 0/1/2/3 shapes, not a substitute font.
-    source = Image.open(REF / 'dark-speedometer.png').convert('RGBA')
+def dashboard_digits():
+    return [dashboard_glyph(str(value)) for value in range(10)]
+
+
+@lru_cache(maxsize=1)
+def date_tens_digits():
+    # Same stencil face as the clock, tightly cropped for visual centring.
     digits = []
-    for box in DATE_TENS_BOXES:
-        crop = source.crop(box)
-        mask = crop.convert('RGB').convert('L').point(
-            lambda value: max(0, min(255, round((value - 40) * 255 / 110))))
-        glyph = Image.new('RGBA', crop.size, (202, 193, 171, 255))
-        glyph.putalpha(mask)
-        glyph = glyph.crop(mask.getbbox())
+    for glyph in dashboard_digits()[:4]:
+        glyph = glyph.crop(glyph.getbbox())
         digits.append(resize(glyph, (round(glyph.width * 58 / glyph.height), 58)))
     return digits
+
+
+def black_time_window_mask(dark_background):
+    # Flood only the dark art's inner LCD panel; keep the rounded bezel intact.
+    candidate = dark_background.crop(TIME_WINDOW_BOX).convert('L').point(
+        lambda value: 255 if value < 12 else 0)
+    ImageDraw.floodfill(candidate, (322 - TIME_WINDOW_BOX[0], 350 - TIME_WINDOW_BOX[1]),
+                       128, thresh=0)
+    return candidate.point(lambda value: 255 if value == 128 else 0)
 
 
 def prepare():
@@ -102,10 +117,15 @@ def prepare():
         plate = Image.new('RGBA', (SIZE, SIZE), (0, 0, 0, 255))
         plate.alpha_composite(bg)
         bg = plate
+        backgrounds.append(bg)
+    # Match the AOD's black lower panel in high power. This is baked into the
+    # background rather than covering the rounded frame with a runtime box.
+    backgrounds[0].paste((0, 0, 0, 255), TIME_WINDOW_BOX,
+                         black_time_window_mask(backgrounds[1]))
+    for bg, dest in zip(backgrounds, ['background.png', 'background-dark.png']):
         bg.save(OUT / dest)
         window_name = 'window-dark.png' if 'dark' in dest else 'window.png'
         bg.crop((180, 81, 273, 185)).save(OUT / window_name)
-        backgrounds.append(bg)
     original = Image.open(REF / 'speedometer.PNG').convert('RGBA')
     for i, box in enumerate(LABEL_BOXES, 1):
         label = original.crop(box)
@@ -138,10 +158,10 @@ def prepare():
     hub.putalpha(hub_mask)
     needle.alpha_composite(hub)
     needle.save(OUT / 'needle.png')
-    glyphs = seven_segment_digits()
+    glyphs = dashboard_digits()
     for i, glyph in enumerate(glyphs):
         glyph.save(OUT / f'digit-{i}.png')
-    for i, glyph in enumerate(dial_date_digits()):
+    for i, glyph in enumerate(date_tens_digits()):
         glyph.save(OUT / f'date-tens-{i}.png')
     return backgrounds, overlays, needle, glyphs
 
@@ -157,19 +177,18 @@ def date_start_x(glyphs, day, month):
     return 322 - (bounds[day // 10][0] + 100 + bounds[month % 10][2]) // 2
 
 
-def time_display_hour(hour, is24_hour=True):
-    return hour if is24_hour else (hour % 12 or 12)
+def time_display_hour(hour):
+    return hour
 
 
-def time_start_x(glyphs, hour, is24_hour=True):
-    hour = time_display_hour(hour, is24_hour)
+def time_start_x(glyphs, hour):
     bounds = [resize(g, (24, 48)).getchannel('A').point(
         lambda a: 255 if a > 128 else 0).getbbox() for g in glyphs]
     return 322 - (bounds[hour // 10][0] + 100 + bounds[0][2]) // 2
 
 
 def render(assets, hour, dark=False, minute=54, day=10, month=8, with_needle=True,
-           date_gauge=False, is24_hour=True):
+           date_gauge=False):
     backgrounds, overlays, needle, glyphs = assets
     canvas = backgrounds[int(dark)].copy()
     if date_gauge:
@@ -190,16 +209,16 @@ def render(assets, hour, dark=False, minute=54, day=10, month=8, with_needle=Tru
     layer.alpha_composite(needle, (PIVOT[0] - 34, PIVOT[1] - 34))
     layer = layer.rotate(angle, Image.Resampling.BICUBIC, center=PIVOT)
     if date_gauge:
-        tens = dial_date_digits()[day // 10]
+        tens = date_tens_digits()[day // 10]
         canvas.alpha_composite(tens, (227 - tens.width // 2, 105))
-        display_hour = time_display_hour(hour, is24_hour)
-        time_x = time_start_x(glyphs, hour, is24_hour)
+        display_hour = time_display_hour(hour)
+        time_x = time_start_x(glyphs, hour)
         for digit, xx in [(display_hour // 10, time_x), (display_hour % 10, time_x + 28),
                           (minute // 10, time_x + 72), (minute % 10, time_x + 100)]:
             canvas.alpha_composite(resize(glyphs[digit], (24, 48)), (xx, 323))
         draw = ImageDraw.Draw(canvas)
         for y in (336, 354):
-            draw.rectangle((time_x + 60, y, time_x + 63, y + 4), fill='#ff4020')
+            draw.rectangle((time_x + 60, y, time_x + 63, y + 4), fill=DISPLAY_COLOR)
     else:
         for digit, xx in [(minute // 10, 196), (minute % 10, 230)]:
             canvas.alpha_composite(glyphs[digit], (xx, 108))
@@ -208,7 +227,7 @@ def render(assets, hour, dark=False, minute=54, day=10, month=8, with_needle=Tru
         for digit, xx in [(day // 10, date_x), (day % 10, date_x + 28),
                           (month // 10, date_x + 72), (month % 10, date_x + 100)]:
             canvas.alpha_composite(resize(glyphs[digit], (24, 42)), (xx, 326))
-        ImageDraw.Draw(canvas).rectangle((date_x + 58, 346, date_x + 65, 349), fill='#ff4020')
+        ImageDraw.Draw(canvas).rectangle((date_x + 58, 346, date_x + 65, 349), fill=DISPLAY_COLOR)
     # The needle is intentionally above the bezel AND digits, including AOD.
     if with_needle:
         canvas.alpha_composite(layer)
@@ -237,6 +256,11 @@ def preview(assets):
         ImageDraw.Draw(canvas).text((190, 425), f'Date {day:02}', fill='white')
         sheet.paste(canvas, ((i % 4) * SIZE, (i // 4) * SIZE), canvas)
     sheet.save(dest / 'dates-preview.png')
+    strip = Image.new('RGBA', (48 * 11, 72), (0, 0, 0, 255))
+    for i, character in enumerate('N0123456789'):
+        glyph = dashboard_glyph(character)
+        strip.alpha_composite(resize(glyph, (38, 60)), (i * 48 + 5, 6))
+    strip.save(dest / 'font-preview.png')
 
 
 if __name__ == '__main__':

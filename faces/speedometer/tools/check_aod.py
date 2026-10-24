@@ -51,13 +51,13 @@ def main():
     for day in range(1, 32):
         for hour, minute in [(0, 0), (8, 8), (18, 58), (23, 59)]:
             image = art.render(assets, hour, minute=minute, day=day, dark=True,
-                               date_gauge=True, is24_hour=True)
+                               date_gauge=True)
             samples.append({'day': day, 'hour': hour, 'minute': minute,
                             **metrics(image, mask)})
     persistent = mask.copy()
     for minute in range(54, 58):
         image = art.render(assets, 13, minute=minute, day=15, dark=True,
-                           date_gauge=True, is24_hour=True)
+                           date_gauge=True)
         persistent = ImageChops.darker(persistent, nonblack(image))
     persistent_count = persistent.histogram()[255]
     report = {

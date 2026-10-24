@@ -8,10 +8,10 @@ ID: existing installed faces are not replaced.
 The original **needle image is retained**. The date gauge layout is selected by
 app setting **Date gauge layout**, enabled by default.
 
-- Bottom-right window: large, optically centred digital `HH:MM`, following the
-  device's 12/24-hour preference. The colon is steady; no seconds or animation.
-  Hours always have two digits; 12-hour mode has no separate AM/PM indicator.
-- Top window: date tens digit, using the supplied dial's own 0/1/2/3 shapes.
+- Bottom-right window: large, optically centred **24-hour `HH:MM`**, regardless
+  of the device's clock preference. The colon is steady; no seconds or animation.
+  The inner LCD background is black on both the yellow and dark faces.
+- Top window: date tens digit, using the same segmented/stencil font as the time.
 - Needle: date ones digit, pointing to the printed 0–9. The printed 10 is unused.
 - Date 05: top **0**, needle at **5**. Date 15: top **1**, needle at **5**.
 - Dates 10/20/30: top **1/2/3**, needle at the bottom **0**, not the printed 10.
@@ -35,15 +35,21 @@ of the upper date digit when its ones digit is 7 (or the minutes near hour 7
 in the original variation). Red numeral patches are used only by that original
 variation.
 
-Digits are solid red-orange seven-segment sprites generated without a font
-dependency. Subtle top-left highlights and lower-right shadow edges give the
-segments a raised bevel; shading is baked into the PNGs, not extra runtime
-layers. All digital digits have equal visible height, including 1/4/7. Time
-digits are 24×48 px, in a 124 px-wide band centred at x=322 by visible strokes,
-not its container. Times beginning with 1 shift 8 px left. The date tens glyph
-is 58 px high and extracted from the actual supplied dark dial, not a substitute
-font. In the original variation, minutes are 28×44 px and date digits 24×42 px,
-with the same optical centring. Both active and AOD use the selected layout. `digits.PNG` remains
+Digits use an original angular segmented/stencil design inspired by the
+Ferrari F430 neutral **N** reference, with split centre strokes and warm
+ivory/amber colouring. This is a stylistic recreation, not an identified or
+extracted commercial font. Both the date tens and digital time use this face.
+Reference: https://tr.pinterest.com/pin/403353710347136692/
+
+Subtle top-left highlights and lower-right shadow edges give the segments a
+raised bevel; shading is baked into the PNGs, not extra runtime layers. All
+digital digits have equal visible height, including 1/4/7. Time digits are
+24×48 px, in a 124 px-wide band centred at x=322 by visible strokes, not its
+container. Times beginning with 1 shift 8 px left. The date tens glyph is 58 px
+high. In the original variation, minutes are 28×44 px and date digits 24×42 px,
+with the same optical centring. Both active and AOD use the selected layout.
+The black lower-panel fill is baked into the light background using a mask of
+the dark artwork's inner LCD, preserving the rounded bezel. `digits.PNG` remains
 in reference/ for provenance, but the dotted font is no longer used.
 
 ## Always-on
@@ -84,6 +90,7 @@ These are **static Pillow composition checks**, not simulator captures:
 - `bin/dark-preview.png` / `bin/aod-preview.png`: 23:54, date 31.
 - `bin/date-zero-preview.png`: 00:00, date 20 (needle at 0).
 - `bin/dates-preview.png`: representative dates including tens/ones boundaries.
+- `bin/font-preview.png`: the reference-inspired N and new digits 0–9.
 - `bin/needle-over-minutes-preview.png`: date 17, needle above the top digit.
 - `bin/legacy-light-preview.png` / `bin/hours-preview.png`: original variation.
 
@@ -136,7 +143,7 @@ animation is introduced.
   19 → 20, 29 → 30, and 31 → 01. Tens and needle must update together.
 - Check 10/20/30 point to 0, and printed 10 is unused. No red hour highlights.
 - Time: 00:00, 01:09, 10:59 → 11:00 → 12:00 → 13:00 and 23:59 → 00:00;
-  verify both 12-hour and 24-hour device settings and optical centring.
+  verify the face stays 24-hour even with a 12-hour device setting, and centring.
 - Toggle **Date gauge layout**: original top minutes / bottom DD-MM and red
   hour-11/12 behaviour must return without stale overlays.
 - Change **Dark dial** through simulator App Settings; verify the plate switches
@@ -153,10 +160,11 @@ and select **Speedometer**. No device copy or deployment is automated here.
 ## Verification status
 
 Offline image/layout/XML checks are available in `tools/test_assets.py`.
-Fifteen offline asset/layout/metric checks passed for the digital-time/date-gauge
-revision, including all 31 dates, zero-angle calibration, matching numeral
-assets, time centring in both clock formats, and known-colour AOD calculations. Monkey C unit tests also
-cover all dates and time-format mappings, but have not been executed yet.
+Seventeen offline asset/layout/metric checks passed for the stencil-font and
+black-window revision, including all 31 dates, zero-angle calibration, shared
+font assets, fixed-24-hour time centring, rounded black LCD masking, stencil
+cutouts, and known-colour AOD calculations. Monkey C unit tests also
+cover all dates and 24-hour mappings, but have not been executed yet.
 Compilation and runtime performance remain unverified for this revision. SDK 9.2.0, connectiq, monkeydo, and xvfb-run are installed on the coding
 host. The native simulator launch was verified under Xvfb, but a signed updated
 PRG is still required to run this face and its unit tests. See TESTING.md.

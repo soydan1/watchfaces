@@ -51,16 +51,11 @@ module SpeedometerTest {
     (:test)
     function testDigitalHours(logger as Test.Logger) as Boolean {
         for (var hour = 0; hour < 24; hour++) {
-            var expected12 = hour % 12;
-            if (expected12 == 0) { expected12 = 12; }
-            if (SpeedometerGeometry.displayHour(hour, true) != hour ||
-                SpeedometerGeometry.displayHour(hour, false) != expected12) {
+            if (SpeedometerGeometry.displayHour(hour) != hour) {
                 return false;
             }
             var expected24X = hour >= 10 && hour < 20 ? 252 : 260;
-            var expected12X = expected12 >= 10 ? 252 : 260;
-            if (SpeedometerGeometry.timeStartX(hour, true) != expected24X ||
-                SpeedometerGeometry.timeStartX(hour, false) != expected12X) {
+            if (SpeedometerGeometry.timeStartX(hour) != expected24X) {
                 return false;
             }
         }

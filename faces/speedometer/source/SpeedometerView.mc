@@ -116,12 +116,11 @@ class SpeedometerView extends WatchUi.WatchFace {
                                    day as Number) as Void {
         var tens = _dateTens[SpeedometerGeometry.dateTens(day)];
         dc.drawBitmap(227 - (tens.getWidth() / 2).toNumber(), 105, tens);
-        var is24Hour = System.getDeviceSettings().is24Hour;
-        var displayHour = SpeedometerGeometry.displayHour(hour, is24Hour);
-        var x = SpeedometerGeometry.timeStartX(hour, is24Hour);
+        var displayHour = SpeedometerGeometry.displayHour(hour);
+        var x = SpeedometerGeometry.timeStartX(hour);
         drawPair(dc, displayHour, x, 323, 24, 48, 4);
         drawPair(dc, minute, x + 72, 323, 24, 48, 4);
-        dc.setColor(0xFF4020, Graphics.COLOR_TRANSPARENT);
+        dc.setColor(SpeedometerGeometry.DISPLAY_COLOR, Graphics.COLOR_TRANSPARENT);
         dc.fillRectangle(x + 60, 336, 4, 5);
         dc.fillRectangle(x + 60, 354, 4, 5);
     }
@@ -138,7 +137,7 @@ class SpeedometerView extends WatchUi.WatchFace {
         var x = SpeedometerGeometry.dateStartX(day);
         drawPair(dc, day, x, 326, 24, 42, 4);
         drawPair(dc, month, x + 72, 326, 24, 42, 4);
-        dc.setColor(0xFF4020, Graphics.COLOR_TRANSPARENT);
+        dc.setColor(SpeedometerGeometry.DISPLAY_COLOR, Graphics.COLOR_TRANSPARENT);
         dc.fillRectangle(x + 58, 346, 8, 4);
     }
 

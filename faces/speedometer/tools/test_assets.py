@@ -83,7 +83,7 @@ class AssetTests(unittest.TestCase):
         eight = self.assets[3][8]
         # An uninterrupted top bar, not a series of dots.
         for x in range(7, 22):
-            self.assertGreater(eight.getpixel((x, 4))[3], 240)
+            self.assertGreater(eight.getpixel((x, 3))[3], 240)
         # 4 must be as tall as 5, despite lacking top and bottom bars.
         heights = [g.getchannel('A').point(lambda a: 255 if a > 128 else 0).getbbox()
                    for g in self.assets[3]]
@@ -105,9 +105,9 @@ class AssetTests(unittest.TestCase):
         eight = self.assets[3][8]
         colors = [eight.getpixel((x, y)) for y in range(44) for x in range(28)
                   if eight.getpixel((x, y))[3] > 240]
-        self.assertTrue(any(g > 110 for r, g, b, a in colors))  # lit edge
+        self.assertTrue(any(g > 235 for r, g, b, a in colors))  # lit edge
         self.assertTrue(any(r < 220 for r, g, b, a in colors))  # shadow edge
-        self.assertTrue(any(r > 245 and 50 < g < 90 for r, g, b, a in colors))
+        self.assertTrue(any(r > 245 and 210 < g < 235 and b > 120 for r, g, b, a in colors))
 
     def test_date_visible_strokes_are_centered(self):
         bounds = art.date_ink_bounds(self.assets[3])
@@ -123,8 +123,8 @@ class AssetTests(unittest.TestCase):
                 right = x + 100 + bounds[month % 10][2]
                 self.assertLessEqual(abs((left + right) / 2 - constants['DATE_CENTER_X']), 0.5)
 
-    def test_date_tens_are_extracted_from_the_dial(self):
-        glyphs = art.dial_date_digits()
+    def test_date_tens_use_the_same_stencil_font_as_time(self):
+        glyphs = art.date_tens_digits()
         self.assertEqual(len(glyphs), 4)
         for glyph in glyphs:
             self.assertEqual(glyph.height, 58)
@@ -133,6 +133,10 @@ class AssetTests(unittest.TestCase):
             self.assertGreaterEqual(x, 193)
             self.assertLessEqual(x + glyph.width, 261)
         self.assertEqual(len({g.tobytes() for g in glyphs}), 4)
+        for actual, source in zip(glyphs, self.assets[3]):
+            source = source.crop(source.getbbox())
+            expected = art.resize(source, actual.size)
+            self.assertIsNone(ImageChops.difference(actual, expected).getbbox())
 
     def test_zero_date_angle_points_to_printed_zero(self):
         source = (art.ROOT / 'source/SpeedometerGeometry.mc').read_text()
@@ -162,21 +166,44 @@ class AssetTests(unittest.TestCase):
         properties = ET.parse(art.ROOT / 'resources/settings/properties.xml').getroot()
         self.assertEqual(properties.find("property[@id='DateGauge']").text, 'true')
 
-    def test_digital_time_is_centered_in_12_and_24_hour_modes(self):
+    def test_digital_time_is_fixed_24_hour_and_centered(self):
         bounds = [art.resize(g, (24, 48)).getchannel('A').point(
             lambda a: 255 if a > 128 else 0).getbbox() for g in self.assets[3]]
-        for is24 in [False, True]:
-            for hour in range(24):
-                display = art.time_display_hour(hour, is24)
-                self.assertEqual(display, hour if is24 else (hour % 12 or 12))
-                x = art.time_start_x(self.assets[3], hour, is24)
-                self.assertEqual(x, 252 if 10 <= display < 20 else 260)
-                for minute in [0, 1, 9, 10, 59]:
-                    left = x + bounds[display // 10][0]
-                    right = x + 100 + bounds[minute % 10][2]
-                    self.assertLessEqual(abs((left + right) / 2 - 322), 0.5)
-                    self.assertGreaterEqual(left, 257)
-                    self.assertLessEqual(right, 389)
+        for hour in range(24):
+            display = art.time_display_hour(hour)
+            self.assertEqual(display, hour)
+            x = art.time_start_x(self.assets[3], hour)
+            self.assertEqual(x, 252 if 10 <= display < 20 else 260)
+            for minute in [0, 1, 9, 10, 59]:
+                left = x + bounds[display // 10][0]
+                right = x + 100 + bounds[minute % 10][2]
+                self.assertLessEqual(abs((left + right) / 2 - 322), 0.5)
+                self.assertGreaterEqual(left, 257)
+                self.assertLessEqual(right, 389)
+        source = (art.ROOT / 'source/SpeedometerView.mc').read_text()
+        self.assertNotIn('is24Hour', source)
+
+    def test_black_lower_window_preserves_the_rounded_frame(self):
+        mask = art.black_time_window_mask(self.assets[0][1])
+        self.assertGreater(mask.histogram()[255], 10000)
+        self.assertEqual(mask.getpixel((0, 0)), 0)
+        box = mask.getbbox()
+        self.assertGreater(box[0], 0)
+        self.assertGreater(box[1], 0)
+        self.assertLess(box[2], mask.width)
+        self.assertLess(box[3], mask.height)
+        light = self.assets[0][0].crop(art.TIME_WINDOW_BOX).convert('RGB')
+        selected = Image.composite(light, Image.new('RGB', light.size), mask)
+        self.assertIsNone(selected.getbbox())
+
+    def test_stencil_font_has_split_strokes_like_the_N_reference(self):
+        eight = self.assets[3][8]
+        self.assertLess(eight.getpixel((14, 22))[3], 30)
+        self.assertGreater(eight.getpixel((8, 22))[3], 240)
+        self.assertGreater(eight.getpixel((20, 22))[3], 240)
+        neutral = art.dashboard_glyph('N')
+        self.assertEqual(neutral.size, eight.size)
+        self.assertNotEqual(neutral.tobytes(), eight.tobytes())
 
     def test_aod_screening_metrics_on_known_colors(self):
         from check_aod import metrics, screen_mask
