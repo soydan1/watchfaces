@@ -4,4 +4,5 @@
     <property id="DateGauge" type="boolean">true</property>
     <property id="SecondsNeedle" type="boolean">true</property>
     <property id="InstrumentLighting" type="boolean">true</property>
+    <property id="SmoothNeedle" type="boolean">true</property>
 </properties>

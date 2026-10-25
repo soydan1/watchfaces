@@ -5,4 +5,5 @@
     <string id="DateGaugeTitle">Date gauge (seconds needle off)</string>
     <string id="SecondsNeedleTitle">Seconds needle + full day</string>
     <string id="InstrumentLightingTitle">Dark instrument lighting</string>
+    <string id="SmoothNeedleTitle">Smooth needle (more power while awake)</string>
 </strings>

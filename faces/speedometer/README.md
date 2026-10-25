@@ -6,7 +6,8 @@ ID: existing installed faces are not replaced.
 ## Reading the dial — seconds/rev mode (default)
 
 The supplied **needle image is retained**, above all windows and digits.
-**Seconds needle + full day** and **Dark instrument lighting** default to on.
+**Seconds needle + full day**, **Dark instrument lighting**, and **Smooth needle**
+default to on.
 
 - Upper window: complete two-digit day, e.g. **15**, optically centred.
 - Lower window: fixed **24-hour `HH:MM`** with a steady colon.
@@ -19,10 +20,15 @@ The supplied **needle image is retained**, above all windows and digits.
   angle to the live second. Cold start goes straight to the current second.
 - 59→00: about **350 ms** returning down the gauge arc, never a full-circle
   spin through the unused gap. Rollover takes priority during wake movement.
-- Steady seconds use the SDK's native high-power once-per-second updates.
-  Only the short movements request extra frames, using a 50 ms timer guarded
-  by display/visibility/mode state. Sleep/hide stops it and parks the motor.
-  Actual cadence and performance remain unverified.
+- **Smooth needle** targets continuous motion with a 50 ms timer (~20 updates
+  per second) only while visible and confirmed high power. Sleep/hide stops
+  the timer and parks the motor. This costs more power while awake.
+- ClockTime exposes whole seconds only: the fraction is estimated from observed
+  second edges and the monotonic timer. Initial phase locks after the first
+  observed edge; a small 80 ms following filter softens corrections. This is a
+  visual seconds gauge, not a precision stopwatch. Native cadence is unverified.
+- Disable **Smooth needle** to restore native once-per-second stepping; then
+  only the brief wake/return movements request extra timer frames.
 
 ### Earlier date-gauge variation
 
@@ -171,7 +177,8 @@ mode draws its top digit at native size and scales four time sprites plus the
 needle. The original variation draws its minutes at native size. Four small
 packed date-tens sprites are retained in addition to the existing resources;
 the heap test includes them and the new instrument plates. No full-screen
-offscreen buffer is introduced. Only short high-power needle movements use a timer.
+offscreen buffer is introduced. Smooth mode keeps its frame timer running while
+awake; stepped mode uses it only for short movements.
 
 ### Runtime acceptance checklist (not yet verified)
 
@@ -202,8 +209,8 @@ and select **Speedometer**. No device copy or deployment is automated here.
 ## Verification status
 
 Offline image/layout/XML checks are available in `tools/test_assets.py`.
-The original 17 checks, four lighting checks, and six seconds-layout/geometry/
-wiring checks passed (**27 offline checks**). They do not execute Monkey C.
+The original 17 checks, four lighting checks, and eight seconds-layout/geometry/
+wiring checks passed (**29 offline checks**). They do not execute Monkey C.
 Additional native unit tests cover the seconds arc, parked state, wake/return,
 interruption, live-target updates, and deferred/cancelled wake; they remain
 unexecuted along with the existing Monkey C tests.

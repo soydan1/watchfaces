@@ -5,6 +5,62 @@ import Toybox.Test;
 // Pure tests: no SDK Timer, drawing, or low-power animation is invoked.
 module NeedleMotionTest {
     (:test)
+    function testFractionalArc(logger as Test.Logger) as Boolean {
+        var previous = -1.0f;
+        for (var tenth = 0; tenth <= 600; tenth++) {
+            var angle = SpeedometerGeometry.sweepNeedleAngle(tenth / 10.0f);
+            if (angle <= previous) { return false; }
+            previous = angle;
+        }
+        return Math.abs(SpeedometerGeometry.sweepNeedleAngle(6.0f) -
+                        SpeedometerGeometry.secondsNeedleAngle(6)) < 0.00001f;
+    }
+
+    (:test)
+    function testPhaseEdges(logger as Test.Logger) as Boolean {
+        var phase = new SecondPhase();
+        if (phase.sample(1000, 20) != 20.0f) { return false; }
+        if (Math.abs(phase.sample(1500, 20) - 20.5f) > 0.00001f) { return false; }
+        if (phase.sample(2000, 21) != 21.0f) { return false; }
+        if (phase.sample(3500, 21) >= 22.0f) { return false; }
+        phase.reset();
+        if (phase.sample(9000, 59) != 59.0f) { return false; }
+        if (phase.sample(9500, 59) != 59.5f) { return false; }
+        return phase.sample(10000, 0) == 0.0f;
+    }
+
+    (:test)
+    function testSmoothSteadyParkAndWake(logger as Test.Logger) as Boolean {
+        var motor = new NeedleMotor();
+        var first = motor.sampleSmooth(1000, 10, false);
+        var next = motor.sampleSmooth(1050, 10, false);
+        var third = motor.sampleSmooth(1100, 10, false);
+        if (next <= first || third <= next || motor.isMoving()) { return false; }
+        motor.park();
+        if (motor.sampleSmooth(5000, 47, true) != third) { return false; }
+        if (motor.sampleSmooth(15000, 0, true) != third) { return false; }
+        motor.wake();
+        if (motor.sampleSmooth(16000, 20, false) != third || !motor.isMoving()) { return false; }
+        var target = SpeedometerGeometry.sweepNeedleAngle(20.5f);
+        return motor.sampleSmooth(16500, 20, false) == target && !motor.isMoving();
+    }
+
+    (:test)
+    function testSmoothReturnAndModeSwitch(logger as Test.Logger) as Boolean {
+        var motor = new NeedleMotor();
+        motor.sampleSmooth(0, 59, false);
+        var high = motor.sampleSmooth(900, 59, false);
+        if (motor.sampleSmooth(1000, 0, false) != high || !motor.isMoving()) { return false; }
+        var low = motor.sampleSmooth(1350, 0, false);
+        if (low >= high || motor.isMoving()) { return false; }
+        if (Math.abs(low - SpeedometerGeometry.sweepNeedleAngle(0.35f)) > 0.00001f) { return false; }
+        // Disabling smooth mode restores the exact whole-second position.
+        if (motor.sample(1400, 0, false) != SpeedometerGeometry.secondsNeedleAngle(0)) { return false; }
+        motor.sampleSmooth(1450, 0, false);
+        return motor.sampleSmooth(1500, 0, false) > SpeedometerGeometry.secondsNeedleAngle(0);
+    }
+
+    (:test)
     function testSecondsArc(logger as Test.Logger) as Boolean {
         var previous = SpeedometerGeometry.secondsNeedleAngle(0);
         for (var second = 1; second <= 60; second++) {

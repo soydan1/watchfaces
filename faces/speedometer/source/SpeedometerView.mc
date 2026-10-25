@@ -127,14 +127,18 @@ class SpeedometerView extends WatchUi.WatchFace {
             _motor.park();
             return;
         }
-        if (!_motor.isMoving()) { stopMotionTimer(); return; }
+        if (Application.Properties.getValue("SmoothNeedle") == false && !_motor.isMoving()) {
+            stopMotionTimer();
+            return;
+        }
         WatchUi.requestUpdate();
     }
 
-    private function updateMotionTimer(lowPower as Boolean, secondsMode as Boolean) as Void {
-        // Recheck display state immediately before creating a timer. Steady
-        // seconds use the SDK's high-power once-per-second onUpdate calls.
-        if (lowPower || isLowPower() || !_visible || !secondsMode || !_motor.isMoving()) {
+    private function updateMotionTimer(lowPower as Boolean, secondsMode as Boolean,
+                                       smooth as Boolean) as Void {
+        // Smooth mode keeps requesting high-power frames. Stepped mode only
+        // requests extra frames during wake/return movements.
+        if (lowPower || isLowPower() || !_visible || !secondsMode || (!smooth && !_motor.isMoving())) {
             stopMotionTimer();
             return;
         }
@@ -162,6 +166,7 @@ class SpeedometerView extends WatchUi.WatchFace {
             dc.drawBitmap(0, 0, _background);
         }
         var secondsMode = Application.Properties.getValue("SecondsNeedle") != false;
+        var smooth = Application.Properties.getValue("SmoothNeedle") != false;
         var dateGauge = Application.Properties.getValue("DateGauge") != false;
         if (secondsMode) {
             drawPair(dc, date.day, SpeedometerGeometry.fullDayStartX(date.day), 112, 22, 44, 4);
@@ -174,11 +179,13 @@ class SpeedometerView extends WatchUi.WatchFace {
         var angle = dateGauge ? SpeedometerGeometry.dateNeedleAngle(date.day)
                               : SpeedometerGeometry.needleAngle(clock.hour);
         if (secondsMode) {
-            angle = _motor.sample(System.getTimer(), clock.sec, lowPower || !_visible);
+            var now = System.getTimer();
+            angle = smooth ? _motor.sampleSmooth(now, clock.sec, lowPower || !_visible)
+                           : _motor.sample(now, clock.sec, lowPower || !_visible);
         } else {
             _motor.park();
         }
-        updateMotionTimer(lowPower, secondsMode);
+        updateMotionTimer(lowPower, secondsMode, smooth);
         // Draw last: the needle must sit over the screen/bezel AND digits.
         if (_needle != null) {
             _xf.setToTranslation(SpeedometerGeometry.PIVOT_X.toFloat(), SpeedometerGeometry.PIVOT_Y.toFloat());
@@ -257,6 +264,7 @@ class SpeedometerView extends WatchUi.WatchFace {
         // Observed heap, not allocator peak; compare with simulator Memory view.
         System.println("Speedometer mode=" + (lowPower ? "aod" : "active")
             + " layout=" + (secondsMode ? "seconds" : (dateGauge ? "date" : "hour"))
+            + " smooth=" + (Application.Properties.getValue("SmoothNeedle") != false ? "true" : "false")
             + " moving=" + (_motor.isMoving() ? "true" : "false")
             + " needleAngle=" + _motor.angle() + " plate=" + _plate
             + " dark=" + (_dark ? "true" : "false") + " drawMs=" + elapsed + " maxDrawMs=" + _maxDrawMs

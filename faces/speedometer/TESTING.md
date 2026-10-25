@@ -2,8 +2,8 @@
 
 ## Verified offline
 
-- **27 Python checks passed**: 17 existing asset/layout/metric tests, four
-  lighting tests, and six seconds-layout/geometry/source-wiring tests.
+- **29 Python checks passed**: 17 existing asset/layout/metric tests, four
+  lighting tests, and eight seconds-layout/geometry/source-wiring tests.
 - Seconds mapping is calibrated to the artwork, monotonic over the gauge arc,
   and aligned with every printed division at multiples of six seconds.
 - All 31 full-day values fit and are optically centred in the upper window.
@@ -15,10 +15,20 @@
 
 The shared generator bakes two packed PNG plates, retaining the supplied
 artwork structure. No per-frame blending, extra full-screen buffer, background
-fade, or continuously running high-power timer is introduced. The SDK supplies
-steady once-per-second high-power updates; the short movements request frames
-at 50 ms intervals. Native decoding, transforms, frame cadence and allocation
-peaks remain unmeasured.
+fade is introduced. **Smooth needle**, on by default, keeps a 50 ms frame timer
+running while visible in confirmed high-power mode. It stops in sleep, off
+mode, hiding, or when seconds mode is disabled. With smooth mode off, native
+once-per-second updates drive steady seconds; only short movements use the
+timer. Native decoding, frame cadence, battery cost and allocation peaks
+remain unmeasured.
+
+ClockTime has no fractional-second field. `SecondPhase` estimates the fraction
+from observed clock edges and the monotonic timer, clamping below the next
+second until its clock edge is observed. Initial phase is unknown until the
+first edge. An 80 ms following filter softens corrections; a small visual lag
+is intentional. Native tests for fractional geometry, phase edges, steady
+sweep, parked/wake behaviour, rollover and switching modes have been added
+but not executed. AOD artwork is unchanged by this smooth-motion revision.
 
 Generated design previews (not simulator captures):
 
@@ -76,6 +86,15 @@ Results are saved to ignored `bin/aod-screening.json` and
 `bin/aod-persistent-pixels.png`; `--legacy` uses separate `aod-legacy-*` files.
 SDK reference: `doc/docs/Connect_IQ_FAQ/How_Do_I_Make_a_Watch_Face_for_AMOLED_Products.html`.
 
+## Owner-reported heat/burn-test measurement
+
+The owner reported **7.3% luminance** while testing the preceding pushed build
+(`b219756`). This is below the documented 10% luminance budget, but the coding
+host has not reproduced it. The exact display mode, sampled needle positions,
+and complete accelerated protection result were not supplied. It is not
+recorded as an overall AOD/burn-in pass. Smooth mode changes only active motion;
+new fractional parked positions can still change the measured AOD result.
+
 ## Native build/runtime blocker
 
 No signed updated app/test PRG is available on this coding host. An earlier
@@ -104,9 +123,12 @@ plates. All native tests remain pending a signed test build.
    rapid sleep/wake, hide/show, display off, and disabling seconds mid-movement.
    No timer should start in low power or continue after hiding/completion.
    Cold start goes directly to current seconds, not an artificial rev from 0.
-5. Enable diagnostics. Record `moving`, `needleAngle`, `plate`, draw time and
-   observed heap. Use the native profiler for actual allocation/graphics peaks;
-   stay below the 128 KB app heap. Confirm no steady animation timer remains.
+5. Enable diagnostics. Record `smooth`, `moving`, `needleAngle`, `plate`, draw
+   time and observed heap. In smooth mode, the timer must continue while awake
+   even when the short wake/return motor movement has ended. Disable smooth:
+   it must stop after that movement and revert to one-second steps. Toggle it
+   during wake/return and check that neither mode moves while asleep/hidden.
+   Use the profiler for actual allocation/graphics peaks; stay below 128 KB.
 6. Turn seconds off to test date-gauge mode; also turn Date gauge off for the
    hour/minutes/DD-MM layout. Turn instrument lighting off for original themes.
    Confirm background switches are instant and the needle remains foreground.

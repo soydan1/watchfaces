@@ -5,6 +5,14 @@ module NeedleMotion {
     const WAKE_MS = 500;
     const RETURN_MS = 350;
     const FRAME_MS = 50;
+    const FOLLOW_MS = 80;
+
+    // Suppress small phase corrections without making a step in needle angle.
+    function follow(startAngle as Float, target as Float, elapsed as Number) as Float {
+        if (elapsed <= 0) { return startAngle; }
+        var gain = elapsed / (FOLLOW_MS + elapsed).toFloat();
+        return startAngle + (target - startAngle) * gain;
+    }
 
     function interpolate(startAngle as Float, target as Float, elapsed as Number,
                          duration as Number) as Float {
@@ -13,6 +21,28 @@ module NeedleMotion {
         var t = elapsed / duration.toFloat();
         var eased = t * t * (3.0f - 2.0f * t);
         return startAngle + (target - startAngle) * eased;
+    }
+}
+
+// ClockTime exposes whole seconds only. Estimate the fraction from observed
+// second edges and the monotonic timer; do not anticipate a minute rollover.
+// Initial fractional phase is unknown until the first observed clock edge.
+class SecondPhase {
+    private var _second as Number = -1;
+    private var _edgeAt as Number = 0;
+
+    function initialize() {}
+    function reset() as Void { _second = -1; }
+
+    function sample(now as Number, second as Number) as Float {
+        if (second != _second) {
+            _second = second;
+            _edgeAt = now;
+        }
+        var fraction = (now - _edgeAt) / 1000.0f;
+        if (fraction < 0.0f) { fraction = 0.0f; }
+        if (fraction > 0.999f) { fraction = 0.999f; }
+        return second.toFloat() + fraction;
     }
 }
 
@@ -26,13 +56,18 @@ class NeedleMotor {
     private var _initialized as Boolean = false;
     private var _pending as Boolean = false;
     private var _moving as Boolean = false;
+    private var _lastSampleAt as Number = 0;
+    private var _phase as SecondPhase;
 
-    function initialize() {}
+    function initialize() {
+        _phase = new SecondPhase();
+    }
 
     function park() as Void {
         // Keep the last rendered angle, including an interrupted animation.
         _pending = false;
         _moving = false;
+        _phase.reset();
     }
 
     function wake() as Void {
@@ -52,14 +87,34 @@ class NeedleMotor {
     }
 
     function sample(now as Number, second as Number, lowPower as Boolean) as Float {
-        var target = SpeedometerGeometry.secondsNeedleAngle(second);
+        _phase.reset();
+        return samplePosition(now, second.toFloat(), lowPower, false);
+    }
+
+    function sampleSmooth(now as Number, second as Number, lowPower as Boolean) as Float {
+        var position = second.toFloat();
+        if (lowPower) {
+            _phase.reset();
+        } else {
+            position = _phase.sample(now, second);
+        }
+        return samplePosition(now, position, lowPower, true);
+    }
+
+    private function samplePosition(now as Number, position as Float,
+                                    lowPower as Boolean, smooth as Boolean) as Float {
+        var second = position.toNumber();
+        var target = SpeedometerGeometry.sweepNeedleAngle(position);
+        var delta = now - _lastSampleAt;
+        _lastSampleAt = now;
         if (!_initialized) {
             // No parked position exists on cold start, including first launch
             // directly into AOD. Seed once without an artificial rev from zero.
             _initialized = true;
             _angle = target;
             _lastSecond = second;
-            park();
+            _pending = false;
+            _moving = false;
             return _angle;
         }
         if (lowPower) {
@@ -77,7 +132,7 @@ class NeedleMotor {
             // Also handles a rollover occurring during the wake animation.
             begin(now, target, NeedleMotion.RETURN_MS);
         } else if (!_moving) {
-            _angle = target;
+            _angle = smooth ? NeedleMotion.follow(_angle, target, delta) : target;
         } else {
             // Catch the live second even if a second ticks over mid-animation.
             _target = target;

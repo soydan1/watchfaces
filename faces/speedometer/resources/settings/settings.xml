@@ -1,4 +1,7 @@
 <settings>
+    <setting propertyKey="@Properties.SmoothNeedle" title="@Strings.SmoothNeedleTitle">
+        <settingConfig type="boolean" />
+    </setting>
     <setting propertyKey="@Properties.SecondsNeedle" title="@Strings.SecondsNeedleTitle">
         <settingConfig type="boolean" />
     </setting>

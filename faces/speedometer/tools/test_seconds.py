@@ -33,6 +33,35 @@ class SecondsTests(unittest.TestCase):
         for label in range(11):
             self.assertAlmostEqual(art.seconds_angle(label * 6), native[label], places=6)
 
+    def test_fractional_positions_move_between_second_marks(self):
+        previous = -math.inf
+        for frame in range(1201):
+            position = frame / 20
+            angle = art.seconds_angle(position)
+            self.assertGreater(angle, previous)
+            previous = angle
+            if position < 60:
+                whole = int(position)
+                self.assertGreaterEqual(angle, art.seconds_angle(whole))
+                self.assertLessEqual(angle, art.seconds_angle(whole + 1))
+        source = (art.ROOT / 'source/SpeedometerGeometry.mc').read_text()
+        self.assertIn('function sweepNeedleAngle(second as Float)', source)
+        self.assertIn('var fraction = (second - label * 6.0f) / 6.0f;', source)
+
+    def test_smooth_option_phase_and_timer_wiring(self):
+        view = (art.ROOT / 'source/SpeedometerView.mc').read_text()
+        motor = (art.ROOT / 'source/NeedleMotion.mc').read_text()
+        self.assertIn('_motor.sampleSmooth(now, clock.sec, lowPower || !_visible)', view)
+        self.assertIn('getValue("SmoothNeedle") == false && !_motor.isMoving()', view)
+        self.assertIn('!secondsMode || (!smooth && !_motor.isMoving())', view)
+        self.assertIn('const FRAME_MS = 50;', motor)
+        self.assertIn('const FOLLOW_MS = 80;', motor)
+        self.assertIn('if (second != _second)', motor)
+        self.assertIn('if (fraction > 0.999f)', motor)
+        self.assertIn('position = _phase.sample(now, second);', motor)
+        self.assertIn('NeedleMotion.follow(_angle, target, delta)', motor)
+        self.assertIn('return samplePosition(now, second.toFloat(), lowPower, false);', motor)
+
     def test_full_day_is_centered_inside_upper_window(self):
         glyphs = art.dashboard_digits()
         bounds = [art.resize(g, (22, 44)).getchannel('A').point(
@@ -74,7 +103,7 @@ class SecondsTests(unittest.TestCase):
             self.assertIn('_motor.park();', body)
         timer = source.split('private function updateMotionTimer(')[1].split('function onUpdate(')[0]
         self.assertLess(timer.index('lowPower || isLowPower() || !_visible'), timer.index('timer.start('))
-        self.assertLess(timer.index('!secondsMode || !_motor.isMoving()'), timer.index('timer.start('))
+        self.assertLess(timer.index('!secondsMode || (!smooth && !_motor.isMoving())'), timer.index('timer.start('))
         self.assertEqual(source.count('timer.start('), 1)
         wake = source.split('function onExitSleep()')[1].split('private function isLowPower()')[0]
         self.assertNotIn('timer.start(', wake)
@@ -84,7 +113,7 @@ class SecondsTests(unittest.TestCase):
 
     def test_new_defaults_and_existing_layouts_retained(self):
         props = ET.parse(art.ROOT / 'resources/settings/properties.xml').getroot()
-        for name in ['SecondsNeedle', 'InstrumentLighting', 'DateGauge']:
+        for name in ['SecondsNeedle', 'InstrumentLighting', 'DateGauge', 'SmoothNeedle']:
             self.assertEqual(props.find(f"property[@id='{name}']").text, 'true')
         source = (art.ROOT / 'source/SpeedometerView.mc').read_text()
         self.assertIn('else if (dateGauge)', source)

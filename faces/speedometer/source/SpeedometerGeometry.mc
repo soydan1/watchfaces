@@ -70,10 +70,14 @@ module SpeedometerGeometry {
     }
 
     function secondsNeedleAngle(second as Number) as Float {
+        return sweepNeedleAngle(second.toFloat());
+    }
+
+    function sweepNeedleAngle(second as Float) as Float {
         if (second <= 0) { return gaugeAngle(0); }
         if (second >= 60) { return gaugeAngle(10); }
-        var label = (second / 6).toNumber();
-        var fraction = (second % 6) / 6.0f;
+        var label = (second / 6.0f).toNumber();
+        var fraction = (second - label * 6.0f) / 6.0f;
         var start = gaugeAngle(label);
         return start + (gaugeAngle(label + 1) - start) * fraction;
     }
