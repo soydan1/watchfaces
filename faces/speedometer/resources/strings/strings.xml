@@ -1,6 +1,8 @@
 <strings>
     <string id="AppName">Speedometer</string>
-    <string id="DarkThemeTitle">Dark dial</string>
+    <string id="DarkThemeTitle">Dark dial (instrument lighting off)</string>
     <string id="DiagnosticsTitle">Log render performance</string>
-    <string id="DateGaugeTitle">Date gauge layout</string>
+    <string id="DateGaugeTitle">Date gauge (seconds needle off)</string>
+    <string id="SecondsNeedleTitle">Seconds needle + full day</string>
+    <string id="InstrumentLightingTitle">Dark instrument lighting</string>
 </strings>

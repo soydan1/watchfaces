@@ -62,6 +62,26 @@ module SpeedometerGeometry {
         return ones == 0 ? DATE_ZERO_ANGLE : _angles[ones - 1];
     }
 
+    // Unwrapped dial arc: increasing seconds travel clockwise from 0 to 10,
+    // not through the unused gap. Each printed division represents 6 seconds.
+    function gaugeAngle(label as Number) as Float {
+        var angle = label == 0 ? DATE_ZERO_ANGLE : _angles[label - 1];
+        return angle < 0 ? angle + 6.2831853f : angle;
+    }
+
+    function secondsNeedleAngle(second as Number) as Float {
+        if (second <= 0) { return gaugeAngle(0); }
+        if (second >= 60) { return gaugeAngle(10); }
+        var label = (second / 6).toNumber();
+        var fraction = (second % 6) / 6.0f;
+        var start = gaugeAngle(label);
+        return start + (gaugeAngle(label + 1) - start) * fraction;
+    }
+
+    function fullDayStartX(day as Number) as Number {
+        return day >= 10 && day < 20 ? 196 : 203;
+    }
+
     // Digital time is always 24-hour, regardless of the device preference.
     function displayHour(hour as Number) as Number {
         return hour;

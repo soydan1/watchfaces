@@ -114,7 +114,7 @@ module SpeedometerTest {
     function testResourcesAndHeap(logger as Test.Logger) as Boolean {
         // Match the view's retained resources, then exercise the actual draw
         // path in the simulator separately to catch decode/transform peaks.
-        var resources = [Rez.Drawables.Background,
+        var resources = [Rez.Drawables.InstrumentActive,
             Rez.Drawables.Needle, Rez.Drawables.RedOne, Rez.Drawables.RedTwo,
             Rez.Drawables.Digit0, Rez.Drawables.Digit1, Rez.Drawables.Digit2,
             Rez.Drawables.Digit3, Rez.Drawables.Digit4, Rez.Drawables.Digit5,
@@ -128,9 +128,9 @@ module SpeedometerTest {
         var used = System.getSystemStats().usedMemory;
         logger.debug("Speedometer retained-resource heap=" + used);
         if (used >= 131072) { return false; }
-        // Also load the alternate plate without dropping the light one: a
+        // Also load the AOD plate without dropping the active one: a
         // conservative check of switching themes before garbage collection.
-        loaded.add(WatchUi.loadResource(Rez.Drawables.BackgroundDark));
+        loaded.add(WatchUi.loadResource(Rez.Drawables.InstrumentAod));
         used = System.getSystemStats().usedMemory;
         logger.debug("Speedometer theme-switch heap=" + used);
         return used < 131072;

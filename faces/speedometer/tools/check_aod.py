@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 """Offline AOD screening, NOT a Garmin simulator or compliance test.
 
-Samples all 31 dates at four times, plus four consecutive minute frames.
+Samples all 31 dates at four time/parked-position pairs, a 60-position sweep
+on day 28, and four consecutive minute frames with one frozen needle.
+--legacy screens the older date-gauge layout and original dark artwork.
 Reports gamma-encoded RGB-weighted luma and linear-sRGB luminance estimates;
 neither formula is asserted to match Garmin's firmware calculation. Nonblack
 coverage is a separate old-device metric, not the modern luminance budget.
 Pillow rendering/colour conversion can differ from the real SDK framebuffer.
 """
+import argparse
 import json
 from PIL import Image, ImageChops, ImageDraw
 import prepare_assets as art
@@ -45,19 +48,33 @@ def metrics(image, mask):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--legacy', action='store_true')
+    args = parser.parse_args()
     assets = art.prepare()
+    if not args.legacy:
+        assets[0][1] = Image.open(art.OUT / 'instrument-aod.png').convert('RGBA')
+
+    def frame(hour, minute, day, parked):
+        return art.render(assets, hour, minute=minute, day=day, dark=True,
+                          date_gauge=True, second=None if args.legacy else parked)
+
     mask = screen_mask()
     samples = []
     for day in range(1, 32):
-        for hour, minute in [(0, 0), (8, 8), (18, 58), (23, 59)]:
-            image = art.render(assets, hour, minute=minute, day=day, dark=True,
-                               date_gauge=True)
+        for hour, minute, parked in [(0, 0, 0), (8, 8, 20), (18, 58, 40), (23, 59, 59)]:
+            image = frame(hour, minute, day, parked)
             samples.append({'day': day, 'hour': hour, 'minute': minute,
+                            'parked_second': None if args.legacy else parked,
                             **metrics(image, mask)})
+    if not args.legacy:
+        for parked in range(60):
+            image = frame(23, 59, 28, parked)
+            samples.append({'day': 28, 'hour': 23, 'minute': 59,
+                            'parked_second': parked, **metrics(image, mask)})
     persistent = mask.copy()
     for minute in range(54, 58):
-        image = art.render(assets, 13, minute=minute, day=15, dark=True,
-                           date_gauge=True)
+        image = frame(13, minute, 15, 47)
         persistent = ImageChops.darker(persistent, nonblack(image))
     persistent_count = persistent.histogram()[255]
     report = {
@@ -65,6 +82,10 @@ def main():
         'physical_screen_pixels_in_mask': mask.histogram()[255],
         'sample_count': len(samples),
         'clock_format': '24h',
+        'layout': 'legacy date gauge' if args.legacy else 'full day / parked seconds needle',
+        'background': 'original dark' if args.legacy else 'instrument AOD',
+        'four_minute_parked_second': None if args.legacy else 47,
+        'sampling': 'Not exhaustive across all date/time/parked-angle combinations',
         'minimum_estimates': {key: min(row[key] for row in samples)
                               for key in metrics(image, mask)},
         'maximum_estimates': {key: max(row[key] for row in samples)
@@ -76,10 +97,11 @@ def main():
         'compliance': 'NOT ESTABLISHED: requires signed PRG, device-specific simulator metrics, and runtime tests',
         'samples': samples,
     }
-    destination = art.ROOT / 'bin/aod-screening.json'
+    stem = 'aod-legacy' if args.legacy else 'aod'
+    destination = art.ROOT / f'bin/{stem}-screening.json'
     destination.parent.mkdir(exist_ok=True)
     destination.write_text(json.dumps(report, indent=2) + '\n')
-    persistent.save(art.ROOT / 'bin/aod-persistent-pixels.png')
+    persistent.save(art.ROOT / f'bin/{stem}-persistent-pixels.png')
     summary = {key: value for key, value in report.items() if key != 'samples'}
     print(json.dumps(summary, indent=2))
     print('Full report:', destination)

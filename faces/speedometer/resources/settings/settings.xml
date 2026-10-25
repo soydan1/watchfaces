@@ -1,4 +1,10 @@
 <settings>
+    <setting propertyKey="@Properties.SecondsNeedle" title="@Strings.SecondsNeedleTitle">
+        <settingConfig type="boolean" />
+    </setting>
+    <setting propertyKey="@Properties.InstrumentLighting" title="@Strings.InstrumentLightingTitle">
+        <settingConfig type="boolean" />
+    </setting>
     <setting propertyKey="@Properties.DateGauge" title="@Strings.DateGaugeTitle">
         <settingConfig type="boolean" />
     </setting>

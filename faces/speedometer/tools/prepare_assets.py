@@ -100,6 +100,13 @@ def black_time_window_mask(dark_background):
     return candidate.point(lambda value: 255 if value == 128 else 0)
 
 
+def instrument_background(original, strength=1.0):
+    from instrument_art import depth_background
+    centers = [((x - CROP[0]) * SCALE, (y - CROP[1]) * SCALE)
+               for x, y in [*LABELS, DATE_ZERO_LABEL]]
+    return depth_background(original, centers, strength)
+
+
 def prepare():
     OUT.mkdir(parents=True, exist_ok=True)
     backgrounds = []
@@ -126,6 +133,8 @@ def prepare():
         bg.save(OUT / dest)
         window_name = 'window-dark.png' if 'dark' in dest else 'window.png'
         bg.crop((180, 81, 273, 185)).save(OUT / window_name)
+    instrument_background(backgrounds[1]).save(OUT / 'instrument-active.png')
+    instrument_background(backgrounds[1], .22).save(OUT / 'instrument-aod.png')
     original = Image.open(REF / 'speedometer.PNG').convert('RGBA')
     for i, box in enumerate(LABEL_BOXES, 1):
         label = original.crop(box)
@@ -187,11 +196,33 @@ def time_start_x(glyphs, hour):
     return 322 - (bounds[hour // 10][0] + 100 + bounds[0][2]) // 2
 
 
+def seconds_angle(second):
+    def gauge(label):
+        x, y = DATE_ZERO_LABEL if label == 0 else LABELS[label - 1]
+        dx = (x - CROP[0]) * SCALE - PIVOT[0]
+        dy = (y - CROP[1]) * SCALE - PIVOT[1]
+        return math.atan2(-dx, dy) % math.tau
+    second = min(60, max(0, second))
+    if second == 60:
+        return gauge(10)
+    label = int(second // 6)
+    return gauge(label) + (gauge(label + 1) - gauge(label)) * (second % 6) / 6
+
+
+def full_day_start_x(day):
+    return 196 if 10 <= day < 20 else 203
+
+
+def motion_angle(start, target, elapsed, duration):
+    t = min(1, max(0, elapsed / duration))
+    return start + (target - start) * t * t * (3 - 2 * t)
+
+
 def render(assets, hour, dark=False, minute=54, day=10, month=8, with_needle=True,
-           date_gauge=False):
+           date_gauge=False, second=None, needle_angle=None):
     backgrounds, overlays, needle, glyphs = assets
     canvas = backgrounds[int(dark)].copy()
-    if date_gauge:
+    if date_gauge or second is not None:
         ones = day % 10
         x, y = DATE_ZERO_LABEL if ones == 0 else LABELS[ones - 1]
     else:
@@ -205,12 +236,21 @@ def render(assets, hour, dark=False, minute=54, day=10, month=8, with_needle=Tru
     dy = (y - CROP[1]) * SCALE - PIVOT[1]
     # Pillow's positive rotation is counter-clockwise; align down to target.
     angle = math.degrees(math.atan2(dx, dy))
+    if second is not None:
+        angle = -math.degrees(seconds_angle(second))
+    if needle_angle is not None:
+        angle = -math.degrees(needle_angle)
     layer = Image.new('RGBA', (SIZE, SIZE))
     layer.alpha_composite(needle, (PIVOT[0] - 34, PIVOT[1] - 34))
     layer = layer.rotate(angle, Image.Resampling.BICUBIC, center=PIVOT)
-    if date_gauge:
-        tens = date_tens_digits()[day // 10]
-        canvas.alpha_composite(tens, (227 - tens.width // 2, 105))
+    if date_gauge or second is not None:
+        if second is None:
+            tens = date_tens_digits()[day // 10]
+            canvas.alpha_composite(tens, (227 - tens.width // 2, 105))
+        else:
+            for digit, offset in [(day // 10, 0), (day % 10, 26)]:
+                canvas.alpha_composite(resize(glyphs[digit], (22, 44)),
+                                       (full_day_start_x(day) + offset, 112))
         display_hour = time_display_hour(hour)
         time_x = time_start_x(glyphs, hour)
         for digit, xx in [(display_hour // 10, time_x), (display_hour % 10, time_x + 28),
@@ -261,6 +301,20 @@ def preview(assets):
         glyph = dashboard_glyph(character)
         strip.alpha_composite(resize(glyph, (38, 60)), (i * 48 + 5, 6))
     strip.save(dest / 'font-preview.png')
+    instrument = ([Image.open(OUT / name).convert('RGBA')
+                   for name in ['instrument-active.png', 'instrument-aod.png']], *assets[1:])
+    render(instrument, 13, day=15, second=47).save(dest / 'seconds-active-preview.png')
+    render(instrument, 13, day=15, second=47, dark=True).save(dest / 'seconds-aod-preview.png')
+    # Design mockups only, not evidence of SDK frame rate or motor state.
+    for name, start_second, target_second, duration in [
+            ('rev', 8, 47, 500), ('return', 59, 0, 350)]:
+        frames = [render(instrument, 13, day=15, second=target_second,
+                         needle_angle=motion_angle(seconds_angle(start_second),
+                                                   seconds_angle(target_second), ms, duration))
+                  for ms in range(0, duration + 1, 50)]
+        frames[0].save(dest / f'needle-{name}-preview.gif', save_all=True,
+                       append_images=frames[1:], duration=[50] * (len(frames) - 1) + [1000],
+                       loop=0, disposal=2)
 
 
 if __name__ == '__main__':

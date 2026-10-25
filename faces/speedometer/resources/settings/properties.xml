@@ -2,4 +2,6 @@
     <property id="DarkTheme" type="boolean">false</property>
     <property id="Diagnostics" type="boolean">false</property>
     <property id="DateGauge" type="boolean">true</property>
+    <property id="SecondsNeedle" type="boolean">true</property>
+    <property id="InstrumentLighting" type="boolean">true</property>
 </properties>

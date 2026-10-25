@@ -21,4 +21,6 @@
     <bitmap id="DateTens1" filename="date-tens-1.png" packingFormat="png" dithering="none" />
     <bitmap id="DateTens2" filename="date-tens-2.png" packingFormat="png" dithering="none" />
     <bitmap id="DateTens3" filename="date-tens-3.png" packingFormat="png" dithering="none" />
+    <bitmap id="InstrumentActive" filename="instrument-active.png" packingFormat="png" dithering="none" />
+    <bitmap id="InstrumentAod" filename="instrument-aod.png" packingFormat="png" dithering="none" />
 </drawables>
